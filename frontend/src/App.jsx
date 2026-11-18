@@ -2,15 +2,15 @@ import { useState } from 'react'
 import './App.css'
 
 function App() {
-  // Храним выбранную пользователем роль
+  // Состояния интерфейса
+  const [isLoginMode, setIsLoginMode] = useState(false) // false = Регистрация, true = Вход
   const [role, setRole] = useState('parent')
-
-  // Храним сообщение, которое показываем после отправки формы
   const [message, setMessage] = useState('')
 
-  // Обрабатываем отправку формы и шлём данные на бэкенд
-  async function handleSubmit(event) {
+  // Обработчик регистрации (работает с JSON)
+  async function handleRegister(event) {
     event.preventDefault()
+    setMessage('')
 
     if (!role) {
       setMessage('Пожалуйста, выберите роль.')
@@ -19,10 +19,8 @@ function App() {
 
     const formData = new FormData(event.target)
     
-    // Склеиваем ФИО для соответствия бэкенду (full_name)
     const fullName = `${formData.get('last_name')} ${formData.get('first_name')} ${formData.get('middle_name')}`.trim()
 
-    // Собираем JSON по контракту бэкенда
     const payload = {
       email: formData.get('email'),
       password: formData.get('password'),
@@ -30,7 +28,6 @@ function App() {
       full_name: fullName,
     }
 
-    // Если специалист, добавляем его специфичные поля
     if (role === 'specialist') {
       payload.organization = formData.get('organization') || null
       payload.specialization = formData.get('specialization') || null
@@ -40,17 +37,16 @@ function App() {
     try {
       const response = await fetch('http://127.0.0.1:8000/api/auth/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
 
       if (response.ok) {
-        setMessage('Аккаунт успешно создан! Данные сохранены в базе.')
+        setMessage('Аккаунт успешно создан! Теперь вы можете войти.')
+        // Сразу переключаем пользователя на форму входа
+        setIsLoginMode(true)
       } else {
         const errorData = await response.json()
-        // Выводим ошибку от FastAPI (например, "Email уже зарегистрирован")
         setMessage(`Ошибка: ${errorData.detail}`)
       }
     } catch (error) {
@@ -58,226 +54,208 @@ function App() {
     }
   }
 
+  // Обработчик входа (работает с x-www-form-urlencoded под стандарт FastAPI)
+  async function handleLogin(event) {
+    event.preventDefault()
+    setMessage('')
+
+    const formData = new FormData(event.target)
+    
+    // FastAPI ожидает поля 'username' и 'password'
+    const urlEncodedData = new URLSearchParams()
+    urlEncodedData.append('username', formData.get('email'))
+    urlEncodedData.append('password', formData.get('password'))
+
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: urlEncodedData.toString()
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        // Сохраняем токен в хранилище браузера
+        localStorage.setItem('token', data.access_token)
+        setMessage('Вход выполнен успешно! (Токен сохранён)')
+      } else {
+        const errorData = await response.json()
+        setMessage(`Ошибка: ${errorData.detail}`)
+      }
+    } catch (error) {
+      setMessage('Ошибка соединения с сервером. Проверьте, запущен ли бэкенд.')
+    }
+  }
+
+  // Сброс ошибок при переключении между формами
+  function toggleMode() {
+    setIsLoginMode(!isLoginMode)
+    setMessage('')
+  }
+
   return (
     <div className="app-shell">
-
-      {/* Верхняя часть страницы */}
       <header className="site-header">
         <div className="brand">
           ReadCheck
         </div>
       </header>
 
-      {/* Основное содержимое */}
       <main className="main-content">
-
         <section className="registration-card">
-
+          
           <p className="form-kicker">
-            СОЗДАНИЕ АККАУНТА
+            {isLoginMode ? 'ВХОД В СИСТЕМУ' : 'СОЗДАНИЕ АККАУНТА'}
           </p>
 
-          <h1>Добро пожаловать!</h1>
+          <h1>{isLoginMode ? 'С возвращением!' : 'Добро пожаловать!'}</h1>
 
           <p className="form-description">
-            Заполните данные для создания аккаунта.
+            {isLoginMode ? 'Введите почту и пароль для доступа к своему кабинету.' : 'Заполните данные для создания аккаунта.'}
           </p>
 
-          <form onSubmit={handleSubmit}>
+          {isLoginMode ? (
+            /* ================= ФОРМА ВХОДА ================= */
+            <form onSubmit={handleLogin}>
+              <div className="form-grid">
+                <div className="form-field full-width">
+                  <label htmlFor="loginEmail">Электронная почта</label>
+                  <input
+                    id="loginEmail"
+                    name="email"
+                    type="email"
+                    placeholder="example@mail.ru"
+                    autoComplete="email"
+                    required
+                  />
+                </div>
 
-            {/* Выбор роли */}
-            <fieldset className="role-fieldset">
-
-              <legend>Роль</legend>
-
-              <div className="role-options">
-
-                <button
-                  type="button"
-                  className={
-                    role === 'parent'
-                      ? 'role-button selected'
-                      : 'role-button'
-                  }
-                  aria-pressed={role === 'parent'}
-                  onClick={() => setRole('parent')}
-                >
-                  Родитель
-                </button>
-
-                <button
-                  type="button"
-                  className={
-                    role === 'specialist'
-                      ? 'role-button selected'
-                      : 'role-button'
-                  }
-                  aria-pressed={role === 'specialist'}
-                  onClick={() => setRole('specialist')}
-                >
-                  Специалист
-                </button>
-
+                <div className="form-field full-width">
+                  <label htmlFor="loginPassword">Пароль</label>
+                  <input
+                    id="loginPassword"
+                    name="password"
+                    type="password"
+                    placeholder="Введите пароль"
+                    autoComplete="current-password"
+                    required
+                  />
+                </div>
               </div>
 
-            </fieldset>
+              <button className="submit-button" type="submit">
+                Войти
+              </button>
+            </form>
+          ) : (
+            /* ============== ФОРМА РЕГИСТРАЦИИ ============== */
+            <form onSubmit={handleRegister}>
+              <fieldset className="role-fieldset">
+                <legend>Роль</legend>
+                <div className="role-options">
+                  <button
+                    type="button"
+                    className={role === 'parent' ? 'role-button selected' : 'role-button'}
+                    aria-pressed={role === 'parent'}
+                    onClick={() => setRole('parent')}
+                  >
+                    Родитель
+                  </button>
+                  <button
+                    type="button"
+                    className={role === 'specialist' ? 'role-button selected' : 'role-button'}
+                    aria-pressed={role === 'specialist'}
+                    onClick={() => setRole('specialist')}
+                  >
+                    Специалист
+                  </button>
+                </div>
+              </fieldset>
 
-            {/* Поля с личными данными */}
-            <div className="form-grid">
+              <div className="form-grid">
+                <div className="form-field">
+                  <label htmlFor="firstName">Имя</label>
+                  <input id="firstName" name="first_name" type="text" placeholder="Введите имя" autoComplete="given-name" required />
+                </div>
 
-              <div className="form-field">
-                <label htmlFor="firstName">
-                  Имя
-                </label>
+                <div className="form-field">
+                  <label htmlFor="lastName">Фамилия</label>
+                  <input id="lastName" name="last_name" type="text" placeholder="Введите фамилию" autoComplete="family-name" required />
+                </div>
 
-                <input
-                  id="firstName"
-                  name="first_name"
-                  type="text"
-                  placeholder="Введите имя"
-                  autoComplete="given-name"
-                  required
-                />
+                <div className="form-field full-width">
+                  <label htmlFor="middleName">Отчество</label>
+                  <input id="middleName" name="middle_name" type="text" placeholder="Введите отчество" autoComplete="additional-name" />
+                </div>
+
+                <div className="form-field full-width">
+                  <label htmlFor="email">Электронная почта</label>
+                  <input id="email" name="email" type="email" placeholder="example@mail.ru" autoComplete="email" required />
+                </div>
+
+                <div className="form-field full-width">
+                  <label htmlFor="password">Пароль</label>
+                  <input id="password" name="password" type="password" placeholder="Не менее 8 символов" autoComplete="new-password" minLength={8} required />
+                </div>
+
+                {role === 'specialist' && (
+                  <>
+                    <div className="form-field full-width">
+                      <label htmlFor="specialization">Специализация (обязательно)</label>
+                      <input id="specialization" name="specialization" type="text" placeholder="Например: Логопед, Дефектолог" required />
+                    </div>
+                    
+                    <div className="form-field">
+                      <label htmlFor="organization">Организация</label>
+                      <input id="organization" name="organization" type="text" placeholder="Место работы" />
+                    </div>
+
+                    <div className="form-field">
+                      <label htmlFor="experience">Стаж (лет)</label>
+                      <input id="experience" name="experience_years" type="number" min="0" placeholder="Например: 5" />
+                    </div>
+                  </>
+                )}
               </div>
 
-              <div className="form-field">
-                <label htmlFor="lastName">
-                  Фамилия
-                </label>
+              <button className="submit-button" type="submit">
+                Создать аккаунт
+              </button>
+            </form>
+          )}
 
-                <input
-                  id="lastName"
-                  name="last_name"
-                  type="text"
-                  placeholder="Введите фамилию"
-                  autoComplete="family-name"
-                  required
-                />
-              </div>
+          {/* Сообщение после отправки */}
+          {message && (
+            <p className="form-message" role="status">
+              {message}
+            </p>
+          )}
 
-              <div className="form-field full-width">
-                <label htmlFor="middleName">
-                  Отчество
-                </label>
-
-                <input
-                  id="middleName"
-                  name="middle_name"
-                  type="text"
-                  placeholder="Введите отчество"
-                  autoComplete="additional-name"
-                />
-              </div>
-
-              <div className="form-field full-width">
-                <label htmlFor="email">
-                  Электронная почта
-                </label>
-
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="example@mail.ru"
-                  autoComplete="email"
-                  required
-                />
-              </div>
-
-              <div className="form-field full-width">
-                <label htmlFor="password">
-                  Пароль
-                </label>
-
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="Не менее 8 символов"
-                  autoComplete="new-password"
-                  minLength={8}
-                  required
-                />
-              </div>
-
-              {/* Поле телефона отключено, так как его нет в БД бэкенда */}
-              {/*
-              <div className="form-field full-width">
-                <label htmlFor="phone">
-                  Номер телефона
-                </label>
-
-                <input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  placeholder="+7 (___) ___-__-__"
-                  autoComplete="tel"
-                  required
-                />
-              </div>
-              */}
-
-              {/* Динамические поля для специалиста */}
-              {role === 'specialist' && (
-                <>
-                  <div className="form-field full-width">
-                    <label htmlFor="specialization">Специализация (обязательно)</label>
-                    <input
-                      id="specialization"
-                      name="specialization"
-                      type="text"
-                      placeholder="Например: Логопед, Дефектолог"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="form-field">
-                    <label htmlFor="organization">Организация</label>
-                    <input
-                      id="organization"
-                      name="organization"
-                      type="text"
-                      placeholder="Место работы"
-                    />
-                  </div>
-
-                  <div className="form-field">
-                    <label htmlFor="experience">Стаж (лет)</label>
-                    <input
-                      id="experience"
-                      name="experience_years"
-                      type="number"
-                      min="0"
-                      placeholder="Например: 5"
-                    />
-                  </div>
-                </>
-              )}
-
-            </div>
-
-            {/* Кнопка регистрации */}
+          {/* Кнопка переключения между Входом и Регистрацией */}
+          <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '15px', color: '#667085' }}>
+            {isLoginMode ? 'Нет аккаунта? ' : 'Уже есть аккаунт? '}
             <button
-              className="submit-button"
-              type="submit"
+              type="button"
+              onClick={toggleMode}
+              style={{
+                color: '#1746b0',
+                fontWeight: '600',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '15px',
+                padding: '0',
+                fontFamily: 'inherit'
+              }}
             >
-              Создать аккаунт
+              {isLoginMode ? 'Зарегистрироваться' : 'Войти'}
             </button>
-
-            {/* Сообщение после отправки */}
-            {message && (
-              <p className="form-message" role="status">
-                {message}
-              </p>
-            )}
-
-          </form>
+          </div>
 
         </section>
-
       </main>
-
     </div>
   )
 }
