@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import {
   BrowserRouter,
@@ -9,10 +8,44 @@ import {
 } from 'react-router-dom'
 import './App.css'
 
+
+function formatPhone(value) {
+  let digits = value.replace(/\D/g, '')
+
+  // Убираем первую 7 или 8, если пользователь её ввёл
+  if (digits.startsWith('7') || digits.startsWith('8')) {
+    digits = digits.slice(1)
+  }
+
+  // Российский номер содержит 10 цифр после +7
+  digits = digits.slice(0, 10)
+
+  let result = '+7'
+
+  if (digits.length > 0) {
+    result += ' (' + digits.slice(0, 3)
+  }
+
+  if (digits.length >= 4) {
+    result += ') ' + digits.slice(3, 6)
+  }
+
+  if (digits.length >= 7) {
+    result += '-' + digits.slice(6, 8)
+  }
+
+  if (digits.length >= 9) {
+    result += '-' + digits.slice(8, 10)
+  }
+
+  return result
+}
+
 // Страница регистрации
 function RegistrationPage() {
   const [role, setRole] = useState('parent')
   const [message, setMessage] = useState('')
+  const [phone, setPhone] = useState('')
 
   function handleSubmit(event) {
     event.preventDefault()
@@ -111,6 +144,7 @@ function RegistrationPage() {
               type="email"
               placeholder="example@mail.ru"
               autoComplete="email"
+              pattern="[^@\s]+@[^@\s]+\.[^@\s]+"
               required
             />
           </div>
@@ -131,12 +165,20 @@ function RegistrationPage() {
           <div className="form-field full-width">
             <label htmlFor="phone">Номер телефона</label>
             <input
-              id="phone"
-              name="phone"
-              type="tel"
-              placeholder="+7 (___) ___-__-__"
-              autoComplete="tel"
-              required
+            id="phone"
+            name="phone"
+            type="tel"
+            value={phone}
+            onChange={(event) => {
+              setPhone(formatPhone(event.target.value))
+            }}
+            placeholder="+7 (___) ___-__-__"
+            autoComplete="tel"
+            inputMode="numeric"
+            maxLength={18}
+            pattern="\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}"
+            title="Введите российский номер в формате +7 (999) 123-45-67"
+            required
             />
           </div>
         </div>
