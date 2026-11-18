@@ -1,4 +1,3 @@
-/* Общая оболочка страницы */
 
 .app-shell {
   min-height: 100vh;
@@ -6,8 +5,6 @@
   flex-direction: column;
   background: #f5f6f8;
 }
-
-/* Верхняя панель */
 
 .site-header {
   width: 100%;
@@ -25,8 +22,6 @@
   color: #111827;
 }
 
-/* Основная часть */
-
 .main-content {
   flex: 1;
   display: flex;
@@ -34,8 +29,6 @@
   align-items: flex-start;
   padding: 45px 20px;
 }
-
-/* Карточка регистрации */
 
 .registration-card {
   width: 100%;
@@ -55,8 +48,6 @@
   color: #2457c5;
 }
 
-/* Заголовок */
-
 .registration-card h1 {
   margin: 0;
   color: #111111;
@@ -70,8 +61,6 @@
   font-size: 15px;
   line-height: 1.5;
 }
-
-/* Выбор роли */
 
 .role-fieldset {
   border: none;
@@ -117,12 +106,14 @@
   color: #1746b0;
 }
 
-/* Поля формы */
-
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 19px 14px;
+}
+
+.login-grid {
+  grid-template-columns: 1fr;
 }
 
 .form-field {
@@ -164,8 +155,6 @@
   box-shadow: 0 0 0 3px rgba(36, 87, 197, 0.1);
 }
 
-/* Кнопка */
-
 .submit-button {
   width: 100%;
   min-height: 49px;
@@ -188,7 +177,32 @@
   transform: scale(0.99);
 }
 
-/* Сообщение */
+.form-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 24px 0 0;
+  color: #667085;
+  font-size: 14px;
+}
+
+.text-button {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #1746b0;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.text-button:hover {
+  color: #10378f;
+  text-decoration: underline;
+}
 
 .form-message {
   margin: 18px 0 0;
@@ -199,8 +213,6 @@
   font-size: 14px;
   line-height: 1.5;
 }
-
-/* Адаптация под телефон */
 
 @media (max-width: 600px) {
   .site-header {
