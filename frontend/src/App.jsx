@@ -21,78 +21,171 @@ const PACE_BARS = [
 ]
 
 /* =====================================================================
- * ЗАГЛУШКИ ТЕКСТОВ И ВОПРОСОВ (до получения методички от команды методистов)
+ * ПЕРВИЧНЫЕ СТИМУЛЫ ОТ МЕТОДИЧЕСКОГО ОТДЕЛА («Стимулы — Предложения»)
+ * 5 компонентов: Орфография, Фонология, Семантика, Морфология, Синтаксис
  * ===================================================================== */
-const MOCK_MODULES = [
+const SENTENCE_STIMULI = [
+  // 1. Орфография
   {
-    id: 'stub-grade-1-2',
-    title: '«Котёнок и лужа»',
-    levelLabel: '1–2 класс',
-    text: 'Утром рыжий котёнок Тишка выбежал во двор и увидел большую блестящую лужу после ночного дождя. В воде отражались белые облака и ветки старой яблони. Тишка осторожно коснулся лужи лапой. Вода дрогнула, и облака распались на десятки весёлых кругов. Котёнок удивился, отряхнул лапку и побежал звать девочку Машу.',
-    questions: [
-      {
-        id: 'q1',
-        prompt: 'Как звали рыжего котёнка?',
-        options: ['Тишка', 'Барсик', 'Пушок'],
-        correctIndex: 0,
-      },
-      {
-        id: 'q2',
-        prompt: 'Что отражалось в луже после дождя?',
-        options: [
-          'Белые облака и ветки яблони',
-          'Крыша дома и птицы',
-          'Солнце и деревянный забор',
-        ],
-        correctIndex: 0,
-      },
-      {
-        id: 'q3',
-        prompt: 'Кого котёнок побежал звать во двор?',
-        options: ['Девочку Машу', 'Маму-кошку', 'Щенка Шарика'],
-        correctIndex: 0,
-      },
-    ],
+    id: 'ort-1',
+    component: 'Орфография',
+    sentence: 'Со стола СОБРАЛ соломинки.',
+    question: 'Выбери сочетание букв, которое повторяется в предложении:',
+    options: ['Со', 'Ос', 'Ур'],
+    correctIndex: 0,
   },
   {
-    id: 'stub-grade-3-4',
-    title: '«Зимняя метеостанция»',
-    levelLabel: '3–4 класс',
-    text: 'На краю соснового леса стояла старая метеостанция. Каждое утро дежурный записывал температуру воздуха, направление ветра и высоту снежного покрова. Однажды зимой приборы показали резкое падение давления. Через два часа поднялась сильная метель, и тропинку к станции быстро замело. Зато предупреждение метеорологов помогло жителям соседнего посёлка вовремя отменить дальнюю поездку и подготовиться к непогоде.',
-    questions: [
-      {
-        id: 'q1',
-        prompt: 'Где находилась метеостанция?',
-        options: [
-          'На краю соснового леса',
-          'На берегу широкой реки',
-          'В центре большого города',
-        ],
-        correctIndex: 0,
-      },
-      {
-        id: 'q2',
-        prompt: 'Что показали приборы за два часа до метели?',
-        options: [
-          'Резкое падение давления',
-          'Сильное потепление',
-          'Направление северного ветра',
-        ],
-        correctIndex: 0,
-      },
-      {
-        id: 'q3',
-        prompt: 'Чем помогло предупреждение метеорологов?',
-        options: [
-          'Жители вовремя отменили дальнюю поездку',
-          'Дорогу успели расчистить до снегопада',
-          'В посёлке заранее включили отопление',
-        ],
-        correctIndex: 0,
-      },
+    id: 'ort-2',
+    component: 'Орфография',
+    sentence: 'На парте лежала карта и марка.',
+    question: 'Выбери сочетание букв, которое повторяется в предложении:',
+    options: ['ар', 'ра', 'лом'],
+    correctIndex: 0,
+  },
+  {
+    id: 'ort-3',
+    component: 'Орфография',
+    sentence: 'В баках росли маки и ползали раки.',
+    question: 'Выбери сочетание букв, которое повторяется в предложении:',
+    options: ['ро', 'ка', 'ак'],
+    correctIndex: 2,
+  },
+
+  // 2. Фонология
+  {
+    id: 'fon-1',
+    component: 'Фонология',
+    sentence: 'Этот ... очень быстрый.',
+    question: 'Выбери наиболее подходящее по смыслу слово:',
+    options: ['Конь', 'Кон', 'Стул'],
+    correctIndex: 0,
+  },
+  {
+    id: 'fon-2',
+    component: 'Фонология',
+    sentence: '... медленно плыл по реке.',
+    question: 'Выбери наиболее подходящее по смыслу слово:',
+    options: ['Плоть', 'Плот', 'Пол'],
+    correctIndex: 1,
+  },
+  {
+    id: 'fon-3',
+    component: 'Фонология',
+    sentence: 'Я был очень ... нашей встрече.',
+    question: 'Выбери наиболее подходящее по смыслу слово:',
+    options: ['Ряд', 'Рад', 'Род'],
+    correctIndex: 1,
+  },
+
+  // 3. Семантика
+  {
+    id: 'sem-1',
+    component: 'Семантика',
+    sentence: 'Старый пёс спал у ворот.',
+    question: 'Кто спал у ворот?',
+    options: ['Забор', 'Собака', 'Кошка'],
+    correctIndex: 1,
+  },
+  {
+    id: 'sem-2',
+    component: 'Семантика',
+    sentence: 'На поляне стояла берёза.',
+    question: 'Что стояло на поляне?',
+    options: ['Пень', 'Дерево', 'Кувшин'],
+    correctIndex: 1,
+  },
+  {
+    id: 'sem-3',
+    component: 'Семантика',
+    sentence: 'Врач осмотрел мальчика.',
+    question: 'Кто осмотрел мальчика?',
+    options: ['Учитель', 'Доктор', 'Больной'],
+    correctIndex: 1,
+  },
+
+  // 4. Морфология
+  {
+    id: 'mor-1',
+    component: 'Морфология',
+    sentence: 'Мой папа работает лесорубом.',
+    question: 'Чем занимается мой папа?',
+    options: ['Пилит деревья', 'Ломает ветки', 'Оформляет документы'],
+    correctIndex: 0,
+  },
+  {
+    id: 'mor-2',
+    component: 'Морфология',
+    sentence: 'Наш дедушка — настоящий книголюб.',
+    question: 'Что делает дедушка?',
+    options: ['Обожает мороженое', 'Продаёт ручки и тетради', 'Много читает'],
+    correctIndex: 2,
+  },
+  {
+    id: 'mor-3',
+    component: 'Морфология',
+    sentence: 'Осенью в парке начался листопад.',
+    question: 'Что происходило в парке?',
+    options: ['Падали листья', 'Дул ветер', 'Шёл снег'],
+    correctIndex: 0,
+  },
+
+  // 5. Синтаксис
+  {
+    id: 'syn-1',
+    component: 'Синтаксис',
+    sentence: 'Книги, которые подарила мне бабушка на день рождения, ... на полке.',
+    question: 'Заполни пропуск подходящим словом:',
+    options: ['Лежит', 'Лежат', 'Лежала'],
+    correctIndex: 1,
+  },
+  {
+    id: 'syn-2',
+    component: 'Синтаксис',
+    sentence: 'Мальчик, который вместе с друзьями участвовал в соревнованиях, ... первое место.',
+    question: 'Заполни пропуск подходящим словом:',
+    options: ['Заняли', 'Занял', 'Заняла'],
+    correctIndex: 1,
+  },
+  {
+    id: 'syn-3',
+    component: 'Синтаксис',
+    sentence: 'Дерево, которое посадили школьники, ... возле школы.',
+    question: 'Заполни пропуск подходящим словом:',
+    options: ['Выросли', 'Выросло', 'Вырос'],
+    correctIndex: 1,
+  },
+]
+
+const TEST_MODES = [
+  {
+    id: 'full-15',
+    title: 'Полный скрининг предложений',
+    levelLabel: 'Методика · 5 компонентов',
+    description: '15 заданий · по 3 на каждый компонент',
+    items: SENTENCE_STIMULI,
+  },
+  {
+    id: 'express-5',
+    title: 'Экспресс-демо (для проверки)',
+    levelLabel: 'Быстрый режим · 5 компонентов',
+    description: '5 заданий · по 1 на каждый компонент',
+    items: [
+      SENTENCE_STIMULI[0],
+      SENTENCE_STIMULI[3],
+      SENTENCE_STIMULI[6],
+      SENTENCE_STIMULI[9],
+      SENTENCE_STIMULI[12],
     ],
   },
 ]
+
+const COMPONENT_ADVICE = {
+  Орфография: 'Полезны короткие игры на поиск одинаковых слогов и буквосочетаний в словах.',
+  Фонология: 'Обратите внимание на различение похожих по звучанию слов (например, плот/плоть, рад/ряд).',
+  Семантика: 'Почаще просите ребёнка своими словами пересказывать прочитанное и подбирать синонимы.',
+  Морфология: 'Разбирайте вместе состав сложных слов (лесоруб, книголюб, листопад) — это расширяет словарь.',
+  Синтаксис: 'Тренируйте согласование слов в длинных предложениях, читая вслух с интонацией.',
+}
 
 function formatTime(totalSeconds) {
   const mins = String(Math.floor(totalSeconds / 60)).padStart(2, '0')
@@ -154,6 +247,7 @@ function BrandLogo() {
 function App() {
   const [token, setToken] = useState(() => localStorage.getItem('token') || '')
   const [userEmail, setUserEmail] = useState(() => localStorage.getItem('userEmail') || '')
+  const [userRole, setUserRole] = useState(() => localStorage.getItem('userRole') || 'parent')
 
   // Экраны: 'intro' | 'register' | 'login' | 'cabinet' | 'screening'
   const [screen, setScreen] = useState(() =>
@@ -171,18 +265,20 @@ function App() {
 
   // Состояние окна скрининга
   const [activeChild, setActiveChild] = useState(null)
-  const [selectedModuleId, setSelectedModuleId] = useState(MOCK_MODULES[0].id)
+  const [selectedModeId, setSelectedModeId] = useState(TEST_MODES[0].id)
   const [consentAccepted, setConsentAccepted] = useState(false)
-  const [testStage, setTestStage] = useState('ready')
+  const [testStage, setTestStage] = useState('ready') // 'ready' | 'testing' | 'result'
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
-  const [flaggedWords, setFlaggedWords] = useState([])
-  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0)
-  const [answers, setAnswers] = useState({})
+  const [currentItemIdx, setCurrentItemIdx] = useState(0)
+  const [itemStartTime, setItemStartTime] = useState(null)
+  const [answers, setAnswers] = useState({}) // { [itemId]: optionIdx }
+  const [itemTimings, setItemTimings] = useState({}) // { [itemId]: seconds }
   const [lastResult, setLastResult] = useState(null)
+  const [reportView, setReportView] = useState('parent') // 'parent' | 'specialist'
   const [showRawJson, setShowRawJson] = useState(false)
 
   useEffect(() => {
-    if (screen !== 'screening' || testStage !== 'reading') return
+    if (screen !== 'screening' || testStage !== 'testing') return
     const intervalId = setInterval(() => {
       setElapsedSeconds((prev) => prev + 1)
     }, 1000)
@@ -250,8 +346,10 @@ function App() {
   function handleLogout() {
     localStorage.removeItem('token')
     localStorage.removeItem('userEmail')
+    localStorage.removeItem('userRole')
     setToken('')
     setUserEmail('')
+    setUserRole('parent')
     setActiveChild(null)
     goToScreen('intro')
   }
@@ -285,6 +383,8 @@ function App() {
       })
 
       if (response.ok) {
+        localStorage.setItem('userRole', role)
+        setUserRole(role)
         setScreen('login')
         setShowPassword(false)
         setStatus({
@@ -439,74 +539,148 @@ function App() {
   }
 
   function openScreeningForChild(child) {
-    const defaultMod =
-      child.grade === '3 класс' || child.grade === '4 класс' || child.grade === '5+ класс'
-        ? MOCK_MODULES[1].id
-        : MOCK_MODULES[0].id
-
     setActiveChild(child)
-    setSelectedModuleId(defaultMod)
+    setSelectedModeId(TEST_MODES[0].id)
     setConsentAccepted(false)
     setTestStage('ready')
     setElapsedSeconds(0)
-    setFlaggedWords([])
-    setCurrentQuestionIdx(0)
+    setCurrentItemIdx(0)
     setAnswers({})
+    setItemTimings({})
     setLastResult(null)
+    setReportView(userRole === 'specialist' ? 'specialist' : 'parent')
     setShowRawJson(false)
     setScreen('screening')
   }
 
-  const activeModule =
-    MOCK_MODULES.find((m) => m.id === selectedModuleId) || MOCK_MODULES[0]
-  const moduleWords = activeModule.text.split(/\s+/)
+  const activeMode =
+    TEST_MODES.find((m) => m.id === selectedModeId) || TEST_MODES[0]
+  const activeItems = activeMode.items
+  const currentItem = activeItems[currentItemIdx]
+  const currentAnswer = currentItem ? answers[currentItem.id] : undefined
 
-  function startReading() {
+  function startTesting() {
     if (!consentAccepted) return
     setElapsedSeconds(0)
-    setFlaggedWords([])
-    setTestStage('reading')
-  }
-
-  function toggleWordFlag(index) {
-    setFlaggedWords((prev) =>
-      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
-    )
-  }
-
-  function finishReading() {
-    setCurrentQuestionIdx(0)
+    setCurrentItemIdx(0)
     setAnswers({})
-    setTestStage('questions')
+    setItemTimings({})
+    setItemStartTime(Date.now())
+    setTestStage('testing')
   }
 
-  function selectAnswer(questionId, optionIdx) {
-    setAnswers((prev) => ({ ...prev, [questionId]: optionIdx }))
+  function recordCurrentItemTime() {
+    if (!currentItem || !itemStartTime) return itemTimings
+    const spentSec = Number(((Date.now() - itemStartTime) / 1000).toFixed(1))
+    const nextTimings = {
+      ...itemTimings,
+      [currentItem.id]: Number(((itemTimings[currentItem.id] || 0) + spentSec).toFixed(1)),
+    }
+    setItemTimings(nextTimings)
+    return nextTimings
+  }
+
+  function handleNextItem() {
+    recordCurrentItemTime()
+    setCurrentItemIdx((prev) => prev + 1)
+    setItemStartTime(Date.now())
+  }
+
+  function handlePrevItem() {
+    recordCurrentItemTime()
+    setCurrentItemIdx((prev) => prev - 1)
+    setItemStartTime(Date.now())
+  }
+
+  function selectAnswer(itemId, optionIdx) {
+    setAnswers((prev) => ({ ...prev, [itemId]: optionIdx }))
   }
 
   async function finishScreening() {
-    const durationSec = Math.max(elapsedSeconds, 1)
-    const totalWords = moduleWords.length
-    const errorsCount = flaggedWords.length
-    const minutes = durationSec / 60
+    const finalTimings = recordCurrentItemTime()
+    const totalQuestions = activeItems.length
 
-    const netWpm = Math.max(0, Math.round((totalWords - errorsCount) / minutes))
-    const errorRate = Number(((errorsCount / totalWords) * 100).toFixed(1))
+    // Считаем точное время, количество слов и разбор по каждому заданию
+    const itemLog = activeItems.map((item) => {
+      const chosenIdx = answers[item.id]
+      const isCorrect = chosenIdx === item.correctIndex
+      const timeSec = finalTimings[item.id] || 1.0
+      return {
+        id: item.id,
+        component: item.component,
+        sentence: item.sentence,
+        question: item.question,
+        chosenText: chosenIdx !== undefined ? item.options[chosenIdx] : '—',
+        correctText: item.options[item.correctIndex],
+        isCorrect,
+        timeSec,
+      }
+    })
 
-    const totalQuestions = activeModule.questions.length
-    const correctAnswers = activeModule.questions.filter(
-      (q) => answers[q.id] === q.correctIndex
-    ).length
+    const totalWords = activeItems.reduce(
+      (sum, item) => sum + item.sentence.split(/\s+/).filter(Boolean).length,
+      0
+    )
+    const summedSec = itemLog.reduce((sum, row) => sum + row.timeSec, 0)
+    const durationSec = Math.max(Math.round(summedSec), elapsedSeconds, 1)
+
+    const correctAnswers = itemLog.filter((r) => r.isCorrect).length
+    const errorsCount = totalQuestions - correctAnswers
     const comprehensionPct = Math.round((correctAnswers / totalQuestions) * 100)
+    const errorRate = Number(((errorsCount / totalQuestions) * 100).toFixed(1))
+    const avgTimeSec = Number((durationSec / totalQuestions).toFixed(1))
+    const netWpm = Math.max(1, Math.round((totalWords / durationSec) * 60))
+
+    // Группировка по 5 методическим компонентам
+    const componentOrder = ['Орфография', 'Фонология', 'Семантика', 'Морфология', 'Синтаксис']
+    const componentStats = componentOrder.map((compName) => {
+      const rows = itemLog.filter((r) => r.component === compName)
+      const total = rows.length
+      const correct = rows.filter((r) => r.isCorrect).length
+      const pct = total > 0 ? Math.round((correct / total) * 100) : 0
+      const avgSec =
+        total > 0
+          ? Number((rows.reduce((s, r) => s + r.timeSec, 0) / total).toFixed(1))
+          : 0
+      let level = 'ok'
+      let statusLabel = 'Норма'
+      if (pct < 50) {
+        level = 'err'
+        statusLabel = 'Требует поддержки'
+      } else if (pct < 80) {
+        level = 'warn'
+        statusLabel = 'Зона внимания'
+      }
+      return { component: compName, correct, total, pct, avgSec, level, statusLabel }
+    })
+
+    // Генерация подробной обратной связи для родителя
+    const strongComps = componentStats.filter((c) => c.pct >= 80).map((c) => c.component)
+    const weakComps = componentStats.filter((c) => c.pct < 80)
+
+    let detailedSummary = ''
+    if (comprehensionPct >= 85) {
+      detailedSummary =
+        'Отличный результат! Ребёнок уверенно справляется с предложениями, точно понимает смысл и грамматические связи. Дополнительная коррекция не требуется — достаточно поддерживать регулярное чтение.'
+    } else if (comprehensionPct >= 60) {
+      detailedSummary =
+        'Хороший базовый уровень, но в отдельных компонентах чтения встречаются затруднения. Ниже указаны конкретные направления, которые стоит мягко потренировать дома или обсудить с педагогом.'
+    } else {
+      detailedSummary =
+        'Выявлены заметные трудности при чтении и анализе предложений. Рекомендуется показать подробный протокол логопеду или школьному педагогу для подбора индивидуальных упражнений.'
+    }
+
+    const recommendations = weakComps.map(
+      (c) => `${c.component} (${c.correct}/${c.total}): ${COMPONENT_ADVICE[c.component]}`
+    )
 
     const rawEventsPayload = {
       child_code: formatChildCode(activeChild.id),
       consent_152fz: true,
-      module_id: activeModule.id,
-      module_title: activeModule.title,
-      flagged_indices: flaggedWords,
-      flagged_words: flaggedWords.map((i) => moduleWords[i]),
-      answers,
+      mode_id: activeMode.id,
+      avg_time_per_item_sec: avgTimeSec,
+      component_stats: componentStats,
+      items: itemLog,
     }
 
     const submitPayload = {
@@ -544,34 +718,25 @@ function App() {
       setIsSubmitting(false)
     }
 
-    const displayWpm =
-      serverData?.words_per_minute !== undefined
-        ? Math.round(serverData.words_per_minute)
-        : netWpm
-
-    const displayComprehension =
-      serverData?.comprehension_score !== undefined
-        ? serverData.comprehension_score <= 1
-          ? Math.round(serverData.comprehension_score * 100)
-          : Math.round(serverData.comprehension_score)
-        : comprehensionPct
-
     const sessionResult = {
       id: serverData?.id ?? Date.now(),
-      moduleId: activeModule.id,
-      moduleTitle: activeModule.title,
+      modeTitle: activeMode.title,
       completedAt: serverData?.created_at || new Date().toISOString(),
       savedToApi,
       durationSec,
+      avgTimeSec,
       totalWords,
-      errorsCount: serverData?.error_count ?? errorsCount,
-      netWpm: displayWpm,
+      errorsCount,
+      netWpm,
       errorRate,
       correctAnswers,
       totalQuestions,
-      comprehensionPct: displayComprehension,
-      parentSummary: serverData?.parent_summary || null,
-      specialistMetrics: serverData?.specialist_metrics || null,
+      comprehensionPct,
+      detailedSummary,
+      strongComps,
+      recommendations,
+      componentStats,
+      itemLog,
       rawData: serverData?.raw_data || rawEventsPayload,
     }
 
@@ -586,8 +751,10 @@ function App() {
     }
   }
 
-  const currentQuestion = activeModule.questions[currentQuestionIdx]
-  const currentAnswer = currentQuestion ? answers[currentQuestion.id] : undefined
+  function handleDownloadPdf() {
+    window.print()
+  }
+
   const completedTestsCount = childrenList.filter((c) => c.lastResult).length
 
   return (
@@ -668,36 +835,19 @@ function App() {
               <div className="container">
                 <div className="hero-grid">
                   <div className="hero-copy">
-                    <span className="hero-eyebrow">
-                      Платформа скрининга чтения · 1–5 классы
-                    </span>
+                    <div className="hero-badge">
+                      <span className="hero-badge-dot" />
+                      Цифровой скрининг чтения · 1–5 классы
+                    </div>
 
                     <h1>
-                      Проверка{' '}
-                      <span className="highlight-word">
-                        навыков чтения
-                        <svg
-                          className="highlight-underline"
-                          viewBox="0 0 220 12"
-                          fill="none"
-                          preserveAspectRatio="none"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="M2 8.5C58 2.5 162 2.5 218 8.5"
-                            stroke="#A7E0D9"
-                            strokeWidth="6"
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                      </span>{' '}
-                      за 5 минут
+                      Поможем увидеть, как{' '}
+                      <span className="gradient-text">читает ребёнок</span>
                     </h1>
 
                     <p className="hero-lead">
-                      Оцениваем скорость чтения, точность и понимание текста. Родители
-                      получают ясный вывод без сложных терминов, а логопеды и педагоги —
-                      подробный протокол и динамику по ученикам.
+                      Спокойная 5-минутная проверка 5 ключевых компонентов чтения:
+                      орфографии, фонологии, семантики, морфологии и синтаксиса.
                     </p>
 
                     <div className="hero-cta-row">
@@ -716,7 +866,7 @@ function App() {
                             className="btn-primary"
                             onClick={() => goToScreen('register')}
                           >
-                            Начать регистрацию →
+                            Начать бесплатно →
                           </button>
 
                           <button
@@ -730,19 +880,39 @@ function App() {
                       )}
                     </div>
 
-                    <p className="hero-footnote">
-                      Бесплатный доступ для семей и специалистов · хранение результатов в
-                      обезличенном виде (152-ФЗ)
-                    </p>
+                    <div className="hero-metrics-row">
+                      <div className="hero-metric">
+                        <strong>5 компонентов</strong>
+                        <span>комплексная диагностика</span>
+                      </div>
+                      <div className="hero-metric">
+                        <strong>PDF-отчёт</strong>
+                        <span>для семьи и специалиста</span>
+                      </div>
+                      <div className="hero-metric">
+                        <strong>152-ФЗ</strong>
+                        <span>обезличенные коды</span>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Многослойная карточка-пример отчёта */}
                   <div className="preview-stage" aria-label="Пример отчёта скрининга">
+                    <div className="preview-glow" aria-hidden="true" />
+
+                    <div className="float-chip top-right" aria-hidden="true">
+                      <span className="chip-icon teal">✓</span>
+                      <span>Точность: 93%</span>
+                    </div>
+
+                    <div className="float-chip bottom-left" aria-hidden="true">
+                      <span className="chip-icon lilac">#</span>
+                      <span>Код ученика: RC-0042</span>
+                    </div>
+
                     <div className="preview-sheet">
-                      <div className="preview-ribbon" />
                       <div className="preview-bar">
                         <span className="preview-session-label">
-                          Пример отчёта · 2 класс
+                          Интерактивный пример · 2 класс
                         </span>
 
                         <div className="mode-pills" role="tablist" aria-label="Режим отчёта">
@@ -753,7 +923,7 @@ function App() {
                             className={previewRole === 'parent' ? 'mode-pill active' : 'mode-pill'}
                             onClick={() => setPreviewRole('parent')}
                           >
-                            Для родителя
+                            Родитель
                           </button>
                           <button
                             type="button"
@@ -762,7 +932,7 @@ function App() {
                             className={previewRole === 'specialist' ? 'mode-pill active' : 'mode-pill'}
                             onClick={() => setPreviewRole('specialist')}
                           >
-                            Для специалиста
+                            Специалист
                           </button>
                         </div>
                       </div>
@@ -770,36 +940,17 @@ function App() {
                       <div className="preview-body">
                         <div className="reading-sample">
                           <div className="sample-top">
-                            <span>Фрагмент текста · 14 слов</span>
-                            <span>
-                              {previewRole === 'parent' ? 'прочитано вслух' : 'отметки по словам'}
-                            </span>
+                            <span>Пример задания · Синтаксис</span>
+                            <span>заполнение пропуска</span>
                           </div>
 
                           <p className="sample-text">
-                            Утром рыжий котёнок выбежал во двор и увидел большую{' '}
+                            Книги, которые подарила мне бабушка на день рождения,{' '}
                             <span className={previewRole === 'specialist' ? 'word-pause' : ''}>
-                              блестящую
+                              лежат
                             </span>{' '}
-                            лужу после{' '}
-                            <span className={previewRole === 'specialist' ? 'word-error' : ''}>
-                              ночного
-                            </span>{' '}
-                            дождя.
+                            на полке.
                           </p>
-
-                          {previewRole === 'specialist' && (
-                            <div className="sample-legend">
-                              <span className="legend-item">
-                                <span className="legend-swatch pause" />
-                                пауза 1.4 с
-                              </span>
-                              <span className="legend-item">
-                                <span className="legend-swatch error" />
-                                замена окончания
-                              </span>
-                            </div>
-                          )}
                         </div>
 
                         {previewRole === 'parent' ? (
@@ -810,8 +961,8 @@ function App() {
                                 <span className="verdict-pill">2 класс</span>
                               </div>
                               <p>
-                                Ребёнок читает уверенно и хорошо понимает смысл текста. Очная
-                                консультация не требуется — можно повторить проверку через
+                                Ребёнок уверенно понимает смысл предложений и правильно
+                                согласует слова. Рекомендуем повторить проверку через
                                 четверть.
                               </p>
                             </div>
@@ -819,21 +970,21 @@ function App() {
                             <div className="parent-bars">
                               <div>
                                 <div className="mini-stat-top">
-                                  <span>Темп чтения</span>
-                                  <strong>92 сл/мин</strong>
+                                  <span>Точность ответов</span>
+                                  <strong>93%</strong>
                                 </div>
                                 <div className="bar-track">
-                                  <div className="bar-fill" style={{ width: '82%' }} />
+                                  <div className="bar-fill ok" style={{ width: '93%' }} />
                                 </div>
                               </div>
 
                               <div>
                                 <div className="mini-stat-top">
-                                  <span>Понимание</span>
-                                  <strong>88%</strong>
+                                  <span>Среднее время</span>
+                                  <strong>6.2 сек</strong>
                                 </div>
                                 <div className="bar-track">
-                                  <div className="bar-fill ok" style={{ width: '88%' }} />
+                                  <div className="bar-fill" style={{ width: '80%' }} />
                                 </div>
                               </div>
                             </div>
@@ -842,22 +993,22 @@ function App() {
                           <>
                             <div className="spec-metrics">
                               <div className="spec-tile">
-                                <span className="spec-tile-label">Чистый темп</span>
-                                <span className="spec-tile-val">88 сл/мин</span>
+                                <span className="spec-tile-label">Орфография</span>
+                                <span className="spec-tile-val">100%</span>
                               </div>
                               <div className="spec-tile">
-                                <span className="spec-tile-label">Доля ошибок</span>
-                                <span className="spec-tile-val accent">2.4%</span>
+                                <span className="spec-tile-label">Фонология</span>
+                                <span className="spec-tile-val accent">67%</span>
                               </div>
                               <div className="spec-tile">
-                                <span className="spec-tile-label">Понимание</span>
-                                <span className="spec-tile-val">7 / 8</span>
+                                <span className="spec-tile-label">Синтаксис</span>
+                                <span className="spec-tile-val">100%</span>
                               </div>
                             </div>
 
                             <div className="pace-box">
                               <div className="pace-header">
-                                Распределение пауз по словам
+                                Время реакции по заданиям (сек)
                               </div>
                               <div className="pace-bars" aria-hidden="true">
                                 {PACE_BARS.map((bar, idx) => (
@@ -878,50 +1029,99 @@ function App() {
               </div>
             </section>
 
-            {/* Полноширинная полоса маршрута вместо 4 шаблонных карточек */}
-            <section className="journey-band" aria-label="Как проходит скрининг">
+            {/* Блок о проекте ReadCheck */}
+            <section className="bento-section" aria-label="О проекте ReadCheck">
               <div className="container">
-                <div className="journey-head">
-                  <h2>Как проходит скрининг</h2>
-                  <span>Четыре простых шага — без стресса для ребёнка</span>
+                <div className="section-header">
+                  <h2>О проекте ReadCheck</h2>
+                  <p>Ранняя оценка навыков чтения для учеников начальной школы</p>
                 </div>
 
-                <div className="journey-track">
-                  <div className="journey-step">
-                    <div className="journey-num">1</div>
-                    <h3>Профиль и код</h3>
-                    <p>
-                      Добавьте ребёнка в кабинете — система сама присвоит ему обезличенный
-                      код ученика.
-                    </p>
-                  </div>
+                <div className="bento-showcase">
+                  <article className="bento-box bento-span-7">
+                    <div>
+                      <h3>Зачем нужен скрининг чтения?</h3>
+                      <p>
+                        Навык чтения напрямую влияет на успеваемость по всем школьным
+                        предметам. Методика оценивает сразу 5 ключевых компонентов — от
+                        зрительного распознавания буквосочетаний до понимания сложных
+                        предложений.
+                      </p>
+                    </div>
 
-                  <div className="journey-step">
-                    <div className="journey-num">2</div>
-                    <h3>Чтение текста</h3>
-                    <p>
-                      Ребёнок читает короткий текст по своему классу, а таймер и отметки
-                      фиксируют темп.
-                    </p>
-                  </div>
+                    <div className="pillars-grid">
+                      <div className="pillar-item">
+                        <strong>Орфография и фонология</strong>
+                        <span>Точность распознавания слогов и звуков</span>
+                      </div>
+                      <div className="pillar-item">
+                        <strong>Семантика и морфология</strong>
+                        <span>Понимание смысла и состава слов</span>
+                      </div>
+                      <div className="pillar-item">
+                        <strong>Синтаксис</strong>
+                        <span>Согласование слов в предложениях</span>
+                      </div>
+                    </div>
+                  </article>
 
-                  <div className="journey-step">
-                    <div className="journey-num">3</div>
-                    <h3>Вопросы по смыслу</h3>
-                    <p>
-                      Короткие вопросы после текста проверяют, насколько точно ребёнок
-                      понял прочитанное.
-                    </p>
-                  </div>
+                  <article className="bento-box bento-span-5">
+                    <div>
+                      <h3>Кому помогает платформа</h3>
+                      <p>
+                        По итогам тестирования можно сразу скачать готовый PDF-отчёт с
+                        рекомендациями для семьи или детальным протоколом для специалиста.
+                      </p>
+                    </div>
+                    <div className="role-compare-pills">
+                      <div className="compare-row">
+                        <span>Родителям</span>
+                        <span className="compare-tag teal">понятные рекомендации</span>
+                      </div>
+                      <div className="compare-row">
+                        <span>Логопедам и педагогам</span>
+                        <span className="compare-tag lilac">профиль по 5 шкалам</span>
+                      </div>
+                    </div>
+                  </article>
 
-                  <div className="journey-step">
-                    <div className="journey-num">4</div>
-                    <h3>Готовый отчёт</h3>
-                    <p>
-                      Результат сохраняется в профиле: понятный итог для семьи или
-                      детальные метрики для специалиста.
-                    </p>
-                  </div>
+                  <article className="bento-box bento-span-12">
+                    <div className="bento-flow-top">
+                      <div>
+                        <h3>Как проходит тестирование</h3>
+                        <p>
+                          Каждому ребёнку автоматически присваивается обезличенный код
+                          ученика для безопасного хранения результатов (152-ФЗ).
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn-white"
+                        onClick={() => goToScreen(token ? 'cabinet' : 'register')}
+                      >
+                        {token ? 'Открыть кабинет →' : 'Начать регистрацию →'}
+                      </button>
+                    </div>
+
+                    <div className="flow-pills">
+                      <div className="flow-pill">
+                        <span>ШАГ 01</span>
+                        <strong>Профиль и код</strong>
+                      </div>
+                      <div className="flow-pill">
+                        <span>ШАГ 02</span>
+                        <strong>Согласие 152-ФЗ</strong>
+                      </div>
+                      <div className="flow-pill">
+                        <span>ШАГ 03</span>
+                        <strong>Задания по 5 шкалам</strong>
+                      </div>
+                      <div className="flow-pill">
+                        <span>ШАГ 04</span>
+                        <strong>Отчёт и PDF</strong>
+                      </div>
+                    </div>
+                  </article>
                 </div>
               </div>
             </section>
@@ -932,7 +1132,7 @@ function App() {
         {screen !== 'intro' && (
           <div className="workspace-section">
             <div className="container">
-              {/* ==================== 2А. РЕГИСТРАЦИЯ: ШАГ 1 (ВЫБОР РОЛИ) ==================== */}
+              {/* ==================== 2А. РЕГИСТРАЦИЯ: ШАГ 1 ==================== */}
               {screen === 'register' && !role && (
                 <section className="role-gate">
                   <button
@@ -965,7 +1165,7 @@ function App() {
                         </p>
                         <ul className="role-choice-points">
                           <li>Профили детей в одном кабинете</li>
-                          <li>Понятный вывод без сложных терминов</li>
+                          <li>Понятный вывод и рекомендации в PDF</li>
                           <li>История прохождений в динамике</li>
                         </ul>
                       </div>
@@ -985,8 +1185,8 @@ function App() {
                         </p>
                         <ul className="role-choice-points">
                           <li>Ведение карточек группы учеников</li>
-                          <li>Чистая скорость чтения и доля ошибок</li>
-                          <li>Детальные данные сессий для анализа</li>
+                          <li>Детальный профиль по 5 компонентам</li>
+                          <li>Позадачный протокол и выгрузка в PDF</li>
                         </ul>
                       </div>
                       <span className="role-choice-cta">Продолжить как специалист →</span>
@@ -1006,7 +1206,7 @@ function App() {
                 </section>
               )}
 
-              {/* ==================== 2Б. РЕГИСТРАЦИЯ: ШАГ 2 (ФОРМА) ==================== */}
+              {/* ==================== 2Б. РЕГИСТРАЦИЯ: ШАГ 2 ==================== */}
               {screen === 'register' && role && (
                 <section
                   className={
@@ -1400,8 +1600,11 @@ function App() {
 
                                     {child.lastResult && (
                                       <div className="child-last-result">
-                                        Последний тест: {child.lastResult.netWpm} сл/мин ·
-                                        понимание {child.lastResult.comprehensionPct}%
+                                        Последний скрининг:{' '}
+                                        {child.lastResult.correctAnswers}/
+                                        {child.lastResult.totalQuestions} (
+                                        {child.lastResult.comprehensionPct}%) · ср. время{' '}
+                                        {child.lastResult.avgTimeSec} сек
                                       </div>
                                     )}
                                   </div>
@@ -1433,7 +1636,7 @@ function App() {
                 </>
               )}
 
-              {/* ==================== 5. ОКНО ПРОХОЖДЕНИЯ СКРИНИНГА ==================== */}
+              {/* ==================== 5. ОКНО СКРИНИНГА ==================== */}
               {screen === 'screening' && activeChild && (
                 <section className="screening-wrap">
                   <div className="screening-topbar">
@@ -1455,76 +1658,60 @@ function App() {
                       </span>
                       <span
                         className={`step-pill ${
-                          testStage === 'reading'
-                            ? 'active'
-                            : testStage === 'questions' || testStage === 'result'
-                              ? 'done'
-                              : ''
-                        }`}
-                      >
-                        2. Чтение
-                      </span>
-                      <span
-                        className={`step-pill ${
-                          testStage === 'questions'
+                          testStage === 'testing'
                             ? 'active'
                             : testStage === 'result'
                               ? 'done'
                               : ''
                         }`}
                       >
-                        3. Вопросы
+                        2. Задания
                       </span>
                       <span
                         className={`step-pill ${testStage === 'result' ? 'active' : ''}`}
                       >
-                        4. Итог
+                        3. Отчёт и PDF
                       </span>
                     </div>
                   </div>
 
                   <div className="screening-card">
+                    {/* ЭТАП 1: ПОДГОТОВКА */}
                     {testStage === 'ready' && (
                       <>
-                        <div className="screening-head-row">
-                          <h1>
-                            Скрининг: {activeChild.full_name} (
-                            {formatChildCode(activeChild.id)})
-                          </h1>
-                          <span className="demo-note">Демо-тексты</span>
-                        </div>
+                        <h1>
+                          Скрининг: {activeChild.full_name} (
+                          {formatChildCode(activeChild.id)})
+                        </h1>
                         <p className="screening-desc">
-                          Выберите текст для чтения, подтвердите согласие и передайте
-                          экран ребёнку.
+                          Первичная методика оценки чтения предложений по 5 компонентам:
+                          орфография, фонология, семантика, морфология и синтаксис.
                         </p>
 
                         <div className="book-picker">
-                          {MOCK_MODULES.map((mod) => (
+                          {TEST_MODES.map((mode) => (
                             <button
-                              key={mod.id}
+                              key={mode.id}
                               type="button"
                               className={
-                                selectedModuleId === mod.id
+                                selectedModeId === mode.id
                                   ? 'book-cover selected'
                                   : 'book-cover'
                               }
-                              onClick={() => setSelectedModuleId(mod.id)}
+                              onClick={() => setSelectedModeId(mode.id)}
                             >
-                              <span className="book-cover-level">{mod.levelLabel}</span>
-                              <span className="book-cover-title">{mod.title}</span>
-                              <span className="book-cover-meta">
-                                {mod.text.split(/\s+/).length} слов · {mod.questions.length}{' '}
-                                вопроса
-                              </span>
+                              <span className="book-cover-level">{mode.levelLabel}</span>
+                              <span className="book-cover-title">{mode.title}</span>
+                              <span className="book-cover-meta">{mode.description}</span>
                             </button>
                           ))}
                         </div>
 
                         <p className="prep-guide">
-                          <strong>Как проводить:</strong> попросите ребёнка читать в
-                          привычном спокойном темпе — после текста будут 3 вопроса по
-                          смыслу. Во время чтения вслух можно кликать по словам, где
-                          ребёнок запнулся или ошибся.
+                          <strong>Как проводить:</strong> передайте экран ребёнку. В
+                          каждом задании нужно прочитать предложение и выбрать один из
+                          трёх вариантов ответа. Система автоматически замеряет время и
+                          точность по каждому компоненту.
                         </p>
 
                         <div
@@ -1553,24 +1740,31 @@ function App() {
                             type="button"
                             className="btn-primary"
                             disabled={!consentAccepted}
-                            onClick={startReading}
+                            onClick={startTesting}
                           >
-                            Начать чтение →
+                            Начать тестирование →
                           </button>
                         </div>
                       </>
                     )}
 
-                    {testStage === 'reading' && (
+                    {/* ЭТАП 2: ПРОХОЖДЕНИЕ ЗАДАНИЙ ПО ПРЕДЛОЖЕНИЯМ */}
+                    {testStage === 'testing' && currentItem && (
                       <>
+                        <div className="test-progress-bar" aria-hidden="true">
+                          <div
+                            className="test-progress-fill"
+                            style={{
+                              width: `${((currentItemIdx + 1) / activeItems.length) * 100}%`,
+                            }}
+                          />
+                        </div>
+
                         <div className="reading-header">
-                          <div>
-                            <strong>{activeModule.title}</strong>
-                            <div className="reading-hint">
-                              Клик по слову отмечает ошибку или длительную паузу
-                              (отмечено: {flaggedWords.length})
-                            </div>
-                          </div>
+                          <span className="comp-badge">
+                            Задание {currentItemIdx + 1} из {activeItems.length} ·{' '}
+                            {currentItem.component}
+                          </span>
 
                           <div className="timer-box" aria-live="polite">
                             <span className="timer-dot" />
@@ -1578,49 +1772,12 @@ function App() {
                           </div>
                         </div>
 
-                        <div className="reading-sheet" aria-label="Текст для чтения">
-                          {moduleWords.map((word, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              className={
-                                flaggedWords.includes(idx)
-                                  ? 'reading-word flagged'
-                                  : 'reading-word'
-                              }
-                              onClick={() => toggleWordFlag(idx)}
-                            >
-                              {word}
-                            </button>
-                          ))}
-                        </div>
+                        <div className="stimulus-sheet">{currentItem.sentence}</div>
 
-                        <div className="reading-footer">
-                          <span className="reading-hint">
-                            Всего слов в тексте: {moduleWords.length}
-                          </span>
-                          <button
-                            type="button"
-                            className="btn-primary"
-                            onClick={finishReading}
-                          >
-                            Чтение завершено — к вопросам →
-                          </button>
-                        </div>
-                      </>
-                    )}
-
-                    {testStage === 'questions' && currentQuestion && (
-                      <>
-                        <div className="question-progress">
-                          Вопрос {currentQuestionIdx + 1} из{' '}
-                          {activeModule.questions.length}
-                        </div>
-
-                        <h2 className="question-title">{currentQuestion.prompt}</h2>
+                        <p className="question-prompt">{currentItem.question}</p>
 
                         <div className="options-stack">
-                          {currentQuestion.options.map((optionText, idx) => (
+                          {currentItem.options.map((optionText, idx) => (
                             <button
                               key={idx}
                               type="button"
@@ -1629,10 +1786,10 @@ function App() {
                                   ? 'option-btn selected'
                                   : 'option-btn'
                               }
-                              onClick={() => selectAnswer(currentQuestion.id, idx)}
+                              onClick={() => selectAnswer(currentItem.id, idx)}
                             >
                               <span className="option-letter">
-                                {String.fromCharCode(65 + idx)}
+                                {['А', 'Б', 'В'][idx]}
                               </span>
                               <span>{optionText}</span>
                             </button>
@@ -1640,11 +1797,11 @@ function App() {
                         </div>
 
                         <div className="reading-footer" style={{ marginTop: '26px' }}>
-                          {currentQuestionIdx > 0 ? (
+                          {currentItemIdx > 0 ? (
                             <button
                               type="button"
                               className="btn-secondary"
-                              onClick={() => setCurrentQuestionIdx((prev) => prev - 1)}
+                              onClick={handlePrevItem}
                             >
                               ← Назад
                             </button>
@@ -1652,14 +1809,14 @@ function App() {
                             <span />
                           )}
 
-                          {currentQuestionIdx < activeModule.questions.length - 1 ? (
+                          {currentItemIdx < activeItems.length - 1 ? (
                             <button
                               type="button"
                               className="btn-primary lilac"
                               disabled={currentAnswer === undefined}
-                              onClick={() => setCurrentQuestionIdx((prev) => prev + 1)}
+                              onClick={handleNextItem}
                             >
-                              Следующий вопрос →
+                              Следующее задание →
                             </button>
                           ) : (
                             <button
@@ -1670,73 +1827,204 @@ function App() {
                             >
                               {isSubmitting
                                 ? 'Сохраняем результат…'
-                                : 'Завершить и рассчитать итог'}
+                                : 'Завершить и получить отчёт'}
                             </button>
                           )}
                         </div>
                       </>
                     )}
 
+                    {/* ЭТАП 3: ПОДРОБНЫЙ ОТЧЁТ + PDF */}
                     {testStage === 'result' && lastResult && (
                       <>
                         <div className="screening-head-row">
-                          <h1>
-                            Итоги скрининга · {activeChild.full_name} (
-                            {formatChildCode(activeChild.id)})
-                          </h1>
+                          <div>
+                            <h1>
+                              Отчёт скрининга · {activeChild.full_name} (
+                              {formatChildCode(activeChild.id)})
+                            </h1>
+                            <div className="report-meta-line">
+                              {lastResult.modeTitle}
+                              {activeChild.grade ? ` · ${activeChild.grade}` : ''} ·{' '}
+                              {new Date(lastResult.completedAt).toLocaleDateString('ru-RU')}
+                            </div>
+                          </div>
+
+                          <div className="mode-pills no-print" role="tablist">
+                            <button
+                              type="button"
+                              role="tab"
+                              aria-selected={reportView === 'parent'}
+                              className={
+                                reportView === 'parent' ? 'mode-pill active' : 'mode-pill'
+                              }
+                              onClick={() => setReportView('parent')}
+                            >
+                              Отчёт родителя
+                            </button>
+                            <button
+                              type="button"
+                              role="tab"
+                              aria-selected={reportView === 'specialist'}
+                              className={
+                                reportView === 'specialist'
+                                  ? 'mode-pill active'
+                                  : 'mode-pill'
+                              }
+                              onClick={() => setReportView('specialist')}
+                            >
+                              Протокол специалиста
+                            </button>
+                          </div>
                         </div>
 
-                        {lastResult.parentSummary ? (
-                          <div className="parent-verdict" style={{ marginTop: '18px' }}>
-                            <div className="verdict-head">
-                              <span className="verdict-title">Заключение системы</span>
-                              {activeChild.grade && (
-                                <span className="verdict-pill">{activeChild.grade}</span>
-                              )}
-                            </div>
-                            <p>{lastResult.parentSummary}</p>
-                          </div>
-                        ) : (
-                          <p className="screening-desc">
-                            Результат сохранён в карточке ребёнка. Возрастные нормы будут
-                            подключены после утверждения методики.
-                          </p>
-                        )}
-
+                        {/* Ключевые метрики */}
                         <div className="result-grid">
                           <div className="result-metric">
-                            <span>Темп чтения</span>
-                            <strong>{lastResult.netWpm} сл/мин</strong>
-                          </div>
-                          <div className="result-metric">
-                            <span>Время чтения</span>
-                            <strong>{formatTime(lastResult.durationSec)}</strong>
-                          </div>
-                          <div className="result-metric">
-                            <span>Ошибки / запинки</span>
-                            <strong>
-                              {lastResult.errorsCount} ({lastResult.errorRate}%)
-                            </strong>
-                          </div>
-                          <div className="result-metric">
-                            <span>Понимание текста</span>
+                            <span>Общая точность</span>
                             <strong>
                               {lastResult.correctAnswers}/{lastResult.totalQuestions} (
                               {lastResult.comprehensionPct}%)
                             </strong>
                           </div>
+                          <div className="result-metric">
+                            <span>Общее время</span>
+                            <strong>{formatTime(lastResult.durationSec)}</strong>
+                          </div>
+                          <div className="result-metric">
+                            <span>Ср. время / задание</span>
+                            <strong>{lastResult.avgTimeSec} сек</strong>
+                          </div>
+                          <div className="result-metric">
+                            <span>Темп чтения</span>
+                            <strong>{lastResult.netWpm} сл/мин</strong>
+                          </div>
                         </div>
 
-                        <div className="reading-footer" style={{ marginTop: '24px' }}>
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            onClick={() => setShowRawJson((prev) => !prev)}
-                          >
-                            {showRawJson
-                              ? 'Скрыть данные сессии'
-                              : 'Показать данные сессии'}
-                          </button>
+                        {/* Заключение */}
+                        <div className="parent-verdict" style={{ marginTop: '18px' }}>
+                          <div className="verdict-head">
+                            <span className="verdict-title">Общее заключение</span>
+                            <span className="verdict-pill">
+                              {lastResult.comprehensionPct >= 85
+                                ? 'Высокий уровень'
+                                : lastResult.comprehensionPct >= 60
+                                  ? 'Базовый уровень'
+                                  : 'Нужна поддержка'}
+                            </span>
+                          </div>
+                          <p>{lastResult.detailedSummary}</p>
+                        </div>
+
+                        {/* Профиль по 5 компонентам */}
+                        <div className="comp-breakdown">
+                          <h3>Результаты по 5 компонентам чтения</h3>
+                          <div className="comp-cards">
+                            {lastResult.componentStats.map((comp) => (
+                              <div key={comp.component} className="comp-card">
+                                <div className="comp-card-name">{comp.component}</div>
+                                <div className="comp-card-score">
+                                  {comp.correct}/{comp.total} ({comp.pct}%)
+                                </div>
+                                <div className="bar-track">
+                                  <div
+                                    className={`bar-fill ${comp.level}`}
+                                    style={{ width: `${comp.pct}%` }}
+                                  />
+                                </div>
+                                <div className="comp-card-meta">
+                                  ср. {comp.avgSec} сек
+                                </div>
+                                <span className={`status-chip ${comp.level}`}>
+                                  {comp.statusLabel}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Рекомендации для родителя */}
+                        {reportView === 'parent' && (
+                          <div className="feedback-block">
+                            <h3>Подробная обратная связь и рекомендации</h3>
+                            <ul className="feedback-list">
+                              {lastResult.strongComps.length > 0 && (
+                                <li>
+                                  <strong>Сильные стороны:</strong>{' '}
+                                  {lastResult.strongComps.join(', ')} — задания выполнены
+                                  уверенно.
+                                </li>
+                              )}
+                              {lastResult.recommendations.length > 0 ? (
+                                lastResult.recommendations.map((rec, i) => (
+                                  <li key={i}>{rec}</li>
+                                ))
+                              ) : (
+                                <li>
+                                  Все 5 компонентов в норме. Поддерживайте регулярное
+                                  чтение интересных ребёнку книг по 15–20 минут в день.
+                                </li>
+                              )}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Подробная таблица по каждому заданию для специалиста */}
+                        {reportView === 'specialist' && (
+                          <div className="spec-table-wrap">
+                            <table className="spec-table">
+                              <thead>
+                                <tr>
+                                  <th>#</th>
+                                  <th>Компонент</th>
+                                  <th>Предложение</th>
+                                  <th>Ответ ребёнка</th>
+                                  <th>Эталон</th>
+                                  <th>Время</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {lastResult.itemLog.map((row, idx) => (
+                                  <tr key={row.id}>
+                                    <td>{idx + 1}</td>
+                                    <td>{row.component}</td>
+                                    <td>{row.sentence}</td>
+                                    <td className={row.isCorrect ? 'ans-ok' : 'ans-err'}>
+                                      {row.chosenText} {row.isCorrect ? '✓' : '✗'}
+                                    </td>
+                                    <td>{row.correctText}</td>
+                                    <td>{row.timeSec} с</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+
+                        {/* Кнопки действий (скрываются при печати в PDF) */}
+                        <div
+                          className="reading-footer no-print"
+                          style={{ marginTop: '24px' }}
+                        >
+                          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                            <button
+                              type="button"
+                              className="btn-primary lilac"
+                              onClick={handleDownloadPdf}
+                            >
+                              Скачать отчёт в PDF
+                            </button>
+
+                            {reportView === 'specialist' && (
+                              <button
+                                type="button"
+                                className="btn-secondary"
+                                onClick={() => setShowRawJson((prev) => !prev)}
+                              >
+                                {showRawJson ? 'Скрыть JSON' : 'Показать JSON'}
+                              </button>
+                            )}
+                          </div>
 
                           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                             <button
@@ -1751,23 +2039,14 @@ function App() {
                               className="btn-primary"
                               onClick={() => goToScreen('cabinet')}
                             >
-                              Вернуться в кабинет
+                              В кабинет
                             </button>
                           </div>
                         </div>
 
-                        {showRawJson && (
-                          <pre className="json-preview">
-                            {JSON.stringify(
-                              lastResult.specialistMetrics
-                                ? {
-                                    specialist_metrics: lastResult.specialistMetrics,
-                                    raw_data: lastResult.rawData,
-                                  }
-                                : lastResult.rawData,
-                              null,
-                              2
-                            )}
+                        {showRawJson && reportView === 'specialist' && (
+                          <pre className="json-preview no-print">
+                            {JSON.stringify(lastResult.rawData, null, 2)}
                           </pre>
                         )}
                       </>
