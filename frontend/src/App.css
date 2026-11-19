@@ -2,7 +2,8 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg-page);
+  background: #ffffff;
+  color: var(--ink-main);
 }
 
 /* ==================== ШАПКА ==================== */
@@ -11,13 +12,13 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid #e7eef6;
 }
 
 .topbar-inner {
-  max-width: 1140px;
+  max-width: 1120px;
   margin: 0 auto;
   padding: 14px 28px;
   display: flex;
@@ -30,7 +31,7 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 0;
+  padding: 4px 8px 4px 0;
   border: none;
   background: none;
   cursor: pointer;
@@ -38,8 +39,8 @@
 }
 
 .brand-mark {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 10px;
   background: var(--teal);
   display: grid;
@@ -48,7 +49,7 @@
 }
 
 .brand-text {
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
@@ -67,19 +68,19 @@
   background: transparent;
   color: var(--ink-secondary);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .btn-ghost:hover {
-  background: var(--bg-sky);
+  background: #f0f6fc;
   color: var(--ink-main);
 }
 
 .btn-nav-primary {
   height: 38px;
-  padding: 0 16px;
+  padding: 0 18px;
   border: none;
   border-radius: 10px;
   background: var(--teal);
@@ -99,54 +100,86 @@
 .page-main {
   flex: 1;
   width: 100%;
-  max-width: 1140px;
-  margin: 0 auto;
-  padding: 40px 28px 64px;
 }
 
-/* ==================== HERO ==================== */
+.container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+/* ==================== 1. ГЛАВНАЯ: ОТКРЫТЫЙ РЕДАКЦИОННЫЙ HERO ==================== */
+
+.hero-section {
+  padding: 52px 0 64px;
+  background: #ffffff;
+}
 
 .hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.06fr);
-  gap: 44px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: 56px;
   align-items: center;
+}
+
+.hero-eyebrow {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--lilac);
+  margin-bottom: 14px;
+  letter-spacing: 0.01em;
 }
 
 .hero-copy h1 {
   margin: 0;
-  font-size: 42px;
-  line-height: 1.12;
+  font-size: 46px;
+  line-height: 1.08;
   font-weight: 700;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.03em;
   color: var(--ink-main);
 }
 
-.hero-copy h1 span {
-  color: var(--teal);
+.highlight-word {
+  position: relative;
+  display: inline-block;
+  color: var(--ink-main);
+  z-index: 1;
+}
+
+.highlight-underline {
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  bottom: -4px;
+  width: calc(100% + 4px);
+  height: 12px;
+  z-index: -1;
 }
 
 .hero-lead {
-  margin: 18px 0 0;
-  max-width: 470px;
-  font-size: 16px;
-  line-height: 1.6;
+  margin: 22px 0 0;
+  max-width: 460px;
+  font-size: 16.5px;
+  line-height: 1.62;
   color: var(--ink-secondary);
 }
 
 .hero-cta-row {
-  margin-top: 28px;
+  margin-top: 30px;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
 }
 
+/* Кнопки */
+
 .btn-primary {
-  min-height: 46px;
-  padding: 0 24px;
+  min-height: 48px;
+  padding: 0 26px;
   border: none;
-  border-radius: 11px;
+  border-radius: 12px;
   background: var(--teal);
   color: #ffffff;
   font-size: 15px;
@@ -156,7 +189,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: background-color 0.15s ease, transform 0.12s ease;
+  transition: background-color 0.15s ease, transform 0.1s ease;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -186,14 +219,14 @@
 }
 
 .btn-secondary {
-  min-height: 46px;
-  padding: 0 20px;
-  border: 1px solid var(--line-strong);
-  border-radius: 11px;
-  background: var(--bg-card);
+  min-height: 48px;
+  padding: 0 22px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 12px;
+  background: #ffffff;
   color: var(--ink-main);
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
@@ -203,20 +236,53 @@
   background: var(--lilac-soft);
 }
 
-/* ==================== ИНТЕРАКТИВНОЕ ПРЕВЬЮ ПРОДУКТА ==================== */
+.hero-footnote {
+  margin-top: 24px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
 
-.preview-window {
-  background: var(--bg-card);
-  border: 1px solid var(--line);
-  border-radius: 18px;
+/* ==================== ИНТЕРАКТИВНЫЙ ЛИСТ ЧТЕНИЯ (СПРАВА В HERO) ==================== */
+
+.preview-stage {
+  position: relative;
+  padding: 20px 0 12px 18px;
+}
+
+/* Подложка-лист сзади для живого многослойного эффекта */
+.preview-stage::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 4px;
+  right: 16px;
+  bottom: 22px;
+  border-radius: 22px;
+  background: #efeafe;
+  transform: rotate(-1.5deg);
+  z-index: 0;
+}
+
+.preview-sheet {
+  position: relative;
+  z-index: 1;
+  background: #ffffff;
+  border: 1.5px solid #dce6f1;
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(31, 45, 61, 0.06);
+  box-shadow: 0 20px 44px rgba(31, 45, 61, 0.08);
+}
+
+/* Цветная закладка сверху */
+.preview-ribbon {
+  height: 6px;
+  background: linear-gradient(90deg, var(--teal) 0%, #5db7de 55%, var(--lilac) 100%);
 }
 
 .preview-bar {
-  padding: 14px 18px;
-  background: var(--bg-sky);
-  border-bottom: 1px solid var(--line);
+  padding: 14px 20px;
+  background: #fafcff;
+  border-bottom: 1px solid #e8eff7;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -226,20 +292,19 @@
 
 .preview-session-label {
   font-size: 13px;
-  font-weight: 600;
-  color: var(--ink-secondary);
+  font-weight: 700;
+  color: var(--ink-main);
 }
 
 .mode-pills {
   display: inline-flex;
   padding: 3px;
-  background: #ffffff;
-  border: 1px solid var(--line);
+  background: #edf3fa;
   border-radius: 9px;
 }
 
 .mode-pill {
-  padding: 6px 12px;
+  padding: 5px 12px;
   border: none;
   border-radius: 6px;
   background: transparent;
@@ -247,26 +312,27 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .mode-pill.active {
-  background: var(--teal);
-  color: #ffffff;
+  background: #ffffff;
+  color: var(--teal);
+  box-shadow: 0 1px 4px rgba(31, 45, 61, 0.1);
 }
 
 .preview-body {
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
 .reading-sample {
   padding: 16px 18px;
   border-radius: 12px;
-  background: #f9fcff;
-  border: 1px solid var(--line);
+  background: #fffefa;
+  border: 1px solid #ece6d9;
+  border-left: 4px solid var(--teal);
 }
 
 .sample-top {
@@ -302,9 +368,9 @@
 }
 
 .sample-legend {
-  margin-top: 12px;
+  margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px solid var(--line);
+  border-top: 1px dashed #e5dfd0;
   display: flex;
   gap: 14px;
   flex-wrap: wrap;
@@ -321,7 +387,7 @@
 .legend-swatch {
   width: 8px;
   height: 8px;
-  border-radius: 2px;
+  border-radius: 3px;
 }
 
 .legend-swatch.pause {
@@ -333,10 +399,10 @@
 }
 
 .parent-verdict {
-  padding: 15px 16px;
+  padding: 14px 16px;
   border-radius: 12px;
   background: var(--teal-soft);
-  border: 1px solid var(--teal-border);
+  border-left: 4px solid var(--teal);
 }
 
 .verdict-head {
@@ -344,7 +410,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .verdict-title {
@@ -355,10 +421,7 @@
 
 .verdict-pill {
   font-size: 11px;
-  font-weight: 600;
-  padding: 2px 9px;
-  border-radius: 999px;
-  background: #ffffff;
+  font-weight: 700;
   color: var(--teal);
 }
 
@@ -372,14 +435,7 @@
 .parent-bars {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.mini-stat {
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  background: #ffffff;
+  gap: 14px;
 }
 
 .mini-stat-top {
@@ -387,7 +443,7 @@
   justify-content: space-between;
   font-size: 12px;
   color: var(--ink-secondary);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .mini-stat-top strong {
@@ -396,9 +452,9 @@
 }
 
 .bar-track {
-  height: 6px;
+  height: 8px;
   border-radius: 999px;
-  background: var(--bg-sky);
+  background: #ebf2fa;
   overflow: hidden;
 }
 
@@ -419,10 +475,10 @@
 }
 
 .spec-tile {
-  padding: 12px;
+  padding: 10px 12px;
   border-radius: 10px;
-  background: #f9fcff;
-  border: 1px solid var(--line);
+  background: #f6faff;
+  border: 1px solid #e2ecf7;
 }
 
 .spec-tile-label {
@@ -433,9 +489,9 @@
 
 .spec-tile-val {
   display: block;
-  margin-top: 4px;
+  margin-top: 3px;
   font-family: var(--font-mono);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--ink-main);
 }
@@ -445,19 +501,16 @@
 }
 
 .pace-box {
-  padding: 14px 16px;
+  padding: 12px 14px;
   border-radius: 12px;
-  background: var(--bg-lilac);
-  border: 1px solid var(--lilac-border);
+  background: #f6f4ff;
+  border: 1px solid #dfd8fb;
 }
 
 .pace-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 10px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--ink-secondary);
 }
 
@@ -466,12 +519,12 @@
   grid-template-columns: repeat(12, 1fr);
   align-items: end;
   gap: 6px;
-  height: 50px;
+  height: 46px;
 }
 
 .pace-bar {
   border-radius: 4px 4px 2px 2px;
-  background: #8cc4de;
+  background: #7ab8de;
 }
 
 .pace-bar.slow {
@@ -482,77 +535,109 @@
   background: var(--lilac);
 }
 
-/* ==================== ЧИСТАЯ ПОЛОСА ЭТАПОВ ПОД HERO ==================== */
+/* ==================== 2. МАРШРУТ СКРИНИНГА (ПОЛНОШИРИННАЯ ПОЛОСА БЕЗ 4 КАРТОЧЕК) ==================== */
 
-.steps-section {
-  margin-top: 44px;
-  background: var(--bg-card);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 26px 28px;
+.journey-band {
+  background: #f4f7fc;
+  border-top: 1px solid #e4ecf5;
+  border-bottom: 1px solid #e4ecf5;
+  padding: 52px 0;
 }
 
-.steps-section-title {
-  margin: 0 0 20px;
+.journey-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 34px;
+}
+
+.journey-head h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.journey-head span {
+  font-size: 14px;
+  color: var(--ink-secondary);
+}
+
+.journey-track {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 28px;
+}
+
+/* Пунктирная линия, соединяющая шаги */
+.journey-track::before {
+  content: '';
+  position: absolute;
+  top: 21px;
+  left: 22px;
+  right: 22px;
+  height: 2px;
+  border-top: 2px dashed #c8d7e8;
+  z-index: 0;
+}
+
+.journey-step {
+  position: relative;
+  z-index: 1;
+}
+
+.journey-num {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid var(--teal);
+  color: var(--teal);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  margin-bottom: 16px;
+}
+
+.journey-step:nth-child(2) .journey-num,
+.journey-step:nth-child(4) .journey-num {
+  border-color: var(--lilac);
+  color: var(--lilac);
+}
+
+.journey-step h3 {
+  margin: 0;
   font-size: 16px;
   font-weight: 700;
   color: var(--ink-main);
 }
 
-.steps-strip {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-}
-
-.step-col {
-  position: relative;
-  padding-right: 12px;
-}
-
-.step-col:not(:last-child) {
-  border-right: 1px solid var(--line);
-}
-
-.step-index {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
-  background: var(--teal-soft);
-  color: var(--teal);
-  font-size: 13px;
-  font-weight: 700;
-  margin-bottom: 10px;
-}
-
-.step-col:nth-child(even) .step-index {
-  background: var(--lilac-soft);
-  color: var(--lilac);
-}
-
-.step-col h3 {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--ink-main);
-}
-
-.step-col p {
-  margin: 6px 0 0;
-  font-size: 13px;
-  line-height: 1.5;
+.journey-step p {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
   color: var(--ink-secondary);
 }
 
-/* ==================== ШАГ 1 РЕГИСТРАЦИИ: ВЫБОР РОЛИ ==================== */
+/* ==================== ОБЩАЯ ПОДЛОЖКА ДЛЯ ВНУТРЕННИХ СТРАНИЦ ==================== */
+
+.workspace-section {
+  background: #f5f9fd;
+  min-height: calc(100vh - 122px);
+  padding: 36px 0 64px;
+}
+
+/* ==================== РЕГИСТРАЦИЯ: ШАГ 1 (ВЫБОР РОЛИ) ==================== */
 
 .role-gate {
   max-width: 820px;
-  margin: 12px auto 0;
-  background: var(--bg-card);
+  margin: 8px auto 0;
+  background: #ffffff;
   border: 1px solid var(--line);
   border-radius: 20px;
   padding: 36px 40px;
@@ -584,17 +669,25 @@
 }
 
 .role-choice-card {
-  padding: 24px;
+  padding: 26px;
   border-radius: 16px;
   border: 1.5px solid var(--line);
-  background: #fbfdff;
+  background: #ffffff;
   text-align: left;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: 18px;
-  transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.12s ease;
+}
+
+.role-choice-card.parent-card {
+  border-top: 5px solid var(--teal);
+}
+
+.role-choice-card.specialist-card {
+  border-top: 5px solid var(--lilac);
 }
 
 .role-choice-card.parent-card:hover {
@@ -636,7 +729,7 @@
   align-items: center;
   gap: 6px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   padding-top: 14px;
   border-top: 1px solid var(--line);
 }
@@ -649,43 +742,38 @@
   color: var(--lilac);
 }
 
-/* ==================== ШАГ 2 РЕГИСТРАЦИИ И ВХОД ==================== */
+/* ==================== РЕГИСТРАЦИЯ (ШАГ 2) И ВХОД ==================== */
 
-.auth-shell {
-  max-width: 940px;
+.auth-card-clean {
+  max-width: 540px;
   margin: 8px auto 0;
-  display: grid;
-  grid-template-columns: 340px minmax(0, 1fr);
-  border-radius: 20px;
-  overflow: hidden;
-  background: var(--bg-card);
+  background: #ffffff;
   border: 1px solid var(--line);
+  border-top: 5px solid var(--teal);
+  border-radius: 18px;
+  padding: 34px 38px;
 }
 
-.auth-panel-soft {
-  padding: 32px;
-  background: var(--bg-sky);
-  border-right: 1px solid var(--line);
-  color: var(--ink-main);
+.auth-card-clean.lilac-top {
+  border-top-color: var(--lilac);
+}
+
+.auth-top-row {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   justify-content: space-between;
-  gap: 24px;
-}
-
-.auth-panel-soft.lilac-mode {
-  background: var(--bg-lilac);
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
 .back-link {
-  align-self: flex-start;
   padding: 6px 12px;
   border: 1px solid var(--line-strong);
   border-radius: 9px;
   background: #ffffff;
   color: var(--ink-secondary);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -694,88 +782,31 @@
   border-color: var(--lilac);
 }
 
-.auth-panel-soft h1 {
+.role-tag-inline {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+.role-tag-inline.lilac {
+  background: var(--lilac-soft);
+  color: var(--lilac);
+}
+
+.auth-card-clean h1 {
   margin: 0;
-  font-size: 28px;
-  line-height: 1.16;
+  font-size: 26px;
   letter-spacing: -0.02em;
 }
 
-.auth-panel-soft p {
-  margin: 10px 0 0;
+.auth-card-sub {
+  margin: 8px 0 24px;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.55;
   color: var(--ink-secondary);
-}
-
-.role-preview-box {
-  padding: 16px 18px;
-  border-radius: 12px;
-  background: #ffffff;
-  border: 1px solid var(--line);
-}
-
-.role-preview-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--lilac);
-  margin-bottom: 8px;
-  display: block;
-}
-
-.role-preview-list {
-  margin: 0;
-  padding-left: 16px;
-  font-size: 13px;
-  line-height: 1.65;
-  color: var(--ink-secondary);
-}
-
-.auth-panel-form {
-  padding: 34px 38px;
-}
-
-.selected-role-strip {
-  margin-bottom: 22px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  background: var(--bg-sky);
-  border: 1px solid var(--sky-border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.selected-role-strip.lilac {
-  background: var(--lilac-soft);
-  border-color: var(--lilac-border);
-}
-
-.selected-role-info {
-  font-size: 14px;
-  color: var(--ink-secondary);
-}
-
-.selected-role-info strong {
-  color: var(--ink-main);
-}
-
-.change-role-btn {
-  background: #ffffff;
-  border: 1px solid var(--line-strong);
-  border-radius: 8px;
-  padding: 5px 11px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink-main);
-  cursor: pointer;
-}
-
-.change-role-btn:hover {
-  border-color: var(--lilac);
-  color: var(--lilac);
 }
 
 .form-grid {
@@ -797,7 +828,7 @@
 .form-field label {
   margin-bottom: 6px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--ink-secondary);
 }
 
@@ -809,7 +840,7 @@
 .form-field select,
 .form-field textarea {
   width: 100%;
-  border: 1px solid var(--line-strong);
+  border: 1.5px solid var(--line-strong);
   border-radius: 10px;
   background: #ffffff;
   color: var(--ink-main);
@@ -859,7 +890,7 @@
   background: none;
   padding: 4px 8px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--ink-secondary);
   cursor: pointer;
 }
@@ -874,7 +905,7 @@
   padding-top: 14px;
   border-top: 1px solid var(--line);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--lilac);
 }
 
@@ -916,7 +947,7 @@
   background: none;
   color: var(--lilac);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 4px;
@@ -928,80 +959,92 @@
   text-decoration-color: var(--teal);
 }
 
-/* ==================== КАБИНЕТ И ПРОФИЛИ ДЕТЕЙ ==================== */
+/* ==================== 4. КАБИНЕТ (ЧИТАТЕЛЬСКИЕ БИЛЕТЫ) ==================== */
 
 .user-chip {
   font-size: 13px;
-  font-weight: 500;
-  color: var(--ink-secondary);
-  background: var(--bg-sky);
+  font-weight: 600;
+  color: var(--lilac);
+  background: var(--lilac-soft);
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius: 9px;
+}
+
+.cabinet-top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #dde7f2;
+}
+
+.cabinet-top h1 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+}
+
+.cabinet-top p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--ink-secondary);
+}
+
+.cabinet-stats-inline {
+  display: flex;
+  gap: 20px;
+  font-size: 14px;
+  color: var(--ink-secondary);
+}
+
+.cabinet-stats-inline strong {
+  font-family: var(--font-mono);
+  color: var(--ink-main);
 }
 
 .cabinet-layout {
   display: grid;
-  grid-template-columns: 360px minmax(0, 1fr);
+  grid-template-columns: 350px minmax(0, 1fr);
   gap: 24px;
   align-items: start;
 }
 
-.cabinet-card {
-  background: var(--bg-card);
+.cabinet-form-card {
+  background: #ffffff;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 16px;
   padding: 24px;
 }
 
-.cabinet-card h2 {
+.cabinet-form-card h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
-  letter-spacing: -0.02em;
 }
 
 .cabinet-sub {
-  margin: 6px 0 20px;
+  margin: 6px 0 18px;
   font-size: 13px;
   line-height: 1.5;
   color: var(--ink-secondary);
 }
 
-.cabinet-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 18px;
-}
-
-.cabinet-title-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.count-pill {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 2px 9px;
-  border-radius: 999px;
-  background: var(--lilac-soft);
-  color: var(--lilac);
-}
-
 .children-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
-.child-card {
-  padding: 18px 20px;
-  border-radius: 14px;
+/* Карточка ребёнка в стиле «читательского билета» */
+.reader-ticket {
+  background: #ffffff;
   border: 1px solid var(--line);
-  background: #f9fcff;
+  border-left: 6px solid var(--teal);
+  border-radius: 14px;
+  padding: 18px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1009,8 +1052,47 @@
   flex-wrap: wrap;
 }
 
+.reader-ticket.tone-1 {
+  border-left-color: var(--lilac);
+}
+
+.reader-ticket.tone-2 {
+  border-left-color: var(--sky);
+}
+
+.child-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 240px;
+  flex: 1;
+}
+
+.child-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 19px;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+.tone-1 .child-avatar {
+  background: var(--lilac-soft);
+  color: var(--lilac);
+}
+
+.tone-2 .child-avatar {
+  background: var(--sky-soft);
+  color: var(--sky);
+}
+
 .child-info {
-  min-width: 220px;
+  min-width: 0;
   flex: 1;
 }
 
@@ -1029,10 +1111,10 @@
 
 .child-grade-pill {
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   padding: 2px 8px;
   border-radius: 6px;
-  background: var(--sky-soft);
+  background: #eef5fc;
   color: var(--sky);
 }
 
@@ -1044,26 +1126,23 @@
   border-radius: 6px;
   background: var(--lilac-soft);
   color: var(--lilac);
-  border: 1px solid var(--lilac-border);
 }
 
 .child-meta {
-  margin-top: 5px;
+  margin-top: 4px;
   font-size: 13px;
   color: var(--ink-secondary);
 }
 
 .child-last-result {
   margin-top: 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  display: inline-block;
   font-size: 12px;
-  font-weight: 500;
-  padding: 4px 10px;
-  border-radius: 8px;
-  background: var(--teal-soft);
+  font-weight: 600;
   color: #0b665c;
+  background: var(--teal-soft);
+  padding: 3px 10px;
+  border-radius: 6px;
 }
 
 .child-actions {
@@ -1091,7 +1170,7 @@
 .btn-remove {
   height: 40px;
   padding: 0 12px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   border-radius: 10px;
   background: #ffffff;
   color: var(--ink-secondary);
@@ -1106,11 +1185,11 @@
 }
 
 .empty-state {
-  padding: 40px 24px;
+  padding: 48px 24px;
   text-align: center;
   border: 1.5px dashed var(--line-strong);
-  border-radius: 14px;
-  background: #fafdff;
+  border-radius: 16px;
+  background: #ffffff;
   color: var(--ink-secondary);
 }
 
@@ -1124,13 +1203,12 @@
 .empty-state p {
   margin: 0;
   font-size: 14px;
-  line-height: 1.5;
 }
 
-/* ==================== ОКНО ПРОХОЖДЕНИЯ СКРИНИНГА ==================== */
+/* ==================== 5. ОКНО СКРИНИНГА (БЕЗ СТОПКИ ЦВЕТНЫХ ПЛАШЕК) ==================== */
 
 .screening-wrap {
-  max-width: 860px;
+  max-width: 820px;
   margin: 0 auto;
 }
 
@@ -1140,7 +1218,7 @@
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .step-pills {
@@ -1173,96 +1251,113 @@
 }
 
 .screening-card {
-  background: var(--bg-card);
+  background: #ffffff;
   border: 1px solid var(--line);
   border-radius: 20px;
-  padding: 32px;
+  padding: 34px 36px;
 }
 
-.stub-banner {
-  margin-bottom: 20px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: var(--lilac-soft);
-  border: 1px solid var(--lilac-border);
-  color: #463a94;
-  font-size: 13px;
+.screening-head-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .screening-card h1 {
   margin: 0;
-  font-size: 28px;
+  font-size: 27px;
   line-height: 1.2;
   letter-spacing: -0.02em;
 }
 
+.demo-note {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--lilac);
+}
+
 .screening-desc {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   font-size: 15px;
-  line-height: 1.6;
+  line-height: 1.55;
   color: var(--ink-secondary);
 }
 
-.module-picker {
-  margin-top: 22px;
+/* Обложки книг для выбора модуля */
+.book-picker {
+  margin-top: 24px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 14px;
 }
 
-.module-option {
-  padding: 16px;
+.book-cover {
+  padding: 18px 20px;
   border-radius: 14px;
   border: 1.5px solid var(--line);
-  background: #f9fcff;
+  border-left: 7px solid #c5d6e8;
+  background: #fafcff;
   text-align: left;
   cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
-.module-option.selected {
+.book-cover.selected {
   border-color: var(--teal);
+  border-left-color: var(--teal);
   background: var(--teal-soft);
 }
 
-.module-option-title {
+.book-cover-level {
   display: block;
-  font-size: 15px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+  margin-bottom: 6px;
+}
+
+.book-cover.selected .book-cover-level {
+  color: var(--teal);
+}
+
+.book-cover-title {
+  display: block;
+  font-size: 16px;
   font-weight: 700;
   color: var(--ink-main);
 }
 
-.module-option-meta {
+.book-cover-meta {
   display: block;
-  margin-top: 4px;
+  margin-top: 6px;
   font-size: 12px;
   color: var(--ink-secondary);
 }
 
-.instruction-box {
-  margin-top: 18px;
-  padding: 16px 18px;
-  border-radius: 12px;
-  background: var(--sky-soft);
-  border: 1px solid var(--sky-border);
+.prep-guide {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
   font-size: 14px;
   line-height: 1.6;
   color: var(--ink-secondary);
 }
 
-/* Блок обязательного согласия на обработку ПДн (152-ФЗ) */
-
-.consent-box {
+.consent-row {
   margin-top: 18px;
-  padding: 16px 18px;
+  padding: 14px 16px;
   border-radius: 12px;
-  background: #ffffff;
-  border: 1.5px solid var(--line-strong);
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  background: #f8fbff;
+  border: 1px solid var(--line);
 }
 
-.consent-box.accepted {
-  border-color: var(--teal);
+.consent-row.accepted {
   background: var(--teal-soft);
+  border-color: var(--teal-border);
 }
 
 .consent-label {
@@ -1270,7 +1365,7 @@
   align-items: flex-start;
   gap: 12px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13.5px;
   line-height: 1.5;
   color: var(--ink-main);
 }
@@ -1282,13 +1377,6 @@
   accent-color: var(--teal);
   flex-shrink: 0;
   cursor: pointer;
-}
-
-.consent-sub {
-  display: block;
-  margin-top: 4px;
-  font-size: 12px;
-  color: var(--ink-secondary);
 }
 
 .reading-header {
@@ -1311,7 +1399,6 @@
   padding: 7px 14px;
   border-radius: 10px;
   background: var(--teal-soft);
-  border: 1px solid var(--teal-border);
   color: #0b665c;
 }
 
@@ -1329,12 +1416,13 @@
 
 .reading-sheet {
   margin: 24px 0;
-  padding: 28px 30px;
+  padding: 28px 32px;
   border-radius: 16px;
-  background: #fbfdff;
-  border: 1px solid var(--line);
-  font-size: 22px;
-  line-height: 1.9;
+  background: #fffefa;
+  border: 1px solid #e8e2d3;
+  border-left: 6px solid var(--teal);
+  font-size: 23px;
+  line-height: 1.95;
   color: var(--ink-main);
   display: flex;
   flex-wrap: wrap;
@@ -1343,7 +1431,7 @@
 
 .reading-word {
   padding: 2px 6px;
-  border-radius: 7px;
+  border-radius: 8px;
   border: 1px solid transparent;
   background: transparent;
   color: inherit;
@@ -1371,9 +1459,9 @@
 }
 
 .question-progress {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--lilac);
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 10px;
 }
 
@@ -1392,10 +1480,10 @@
 
 .option-btn {
   width: 100%;
-  padding: 16px 18px;
+  padding: 15px 18px;
   border-radius: 12px;
   border: 1.5px solid var(--line);
-  background: #f9fcff;
+  background: #fafcff;
   color: var(--ink-main);
   font-size: 16px;
   font-weight: 500;
@@ -1424,7 +1512,7 @@
   border: 1px solid var(--line);
   font-family: var(--font-mono);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--ink-secondary);
   display: grid;
   place-items: center;
@@ -1481,13 +1569,13 @@
 /* ==================== ФУТЕР ==================== */
 
 .page-footer {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid #e7eef6;
   background: #ffffff;
-  padding: 16px 28px;
+  padding: 18px 28px;
 }
 
 .footer-inner {
-  max-width: 1140px;
+  max-width: 1120px;
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
@@ -1500,31 +1588,20 @@
 
 @media (max-width: 960px) {
   .hero-grid,
-  .auth-shell,
   .cabinet-layout {
     grid-template-columns: 1fr;
   }
 
-  .steps-strip {
+  .journey-track {
     grid-template-columns: 1fr 1fr;
   }
 
-  .step-col:not(:last-child) {
-    border-right: none;
-  }
-
-  .auth-panel-soft {
-    border-right: none;
-    border-bottom: 1px solid var(--line);
+  .journey-track::before {
+    display: none;
   }
 
   .hero-copy h1 {
-    font-size: 34px;
-  }
-
-  .auth-panel-form,
-  .role-gate {
-    padding: 28px 24px;
+    font-size: 36px;
   }
 
   .result-grid {
@@ -1534,7 +1611,7 @@
 
 @media (max-width: 640px) {
   .topbar-inner,
-  .page-main,
+  .container,
   .page-footer {
     padding-left: 16px;
     padding-right: 16px;
@@ -1544,12 +1621,12 @@
     display: none;
   }
 
-  .steps-strip,
+  .journey-track,
   .role-gate-grid,
   .form-grid,
   .parent-bars,
   .spec-metrics,
-  .module-picker,
+  .book-picker,
   .result-grid {
     grid-template-columns: 1fr;
   }
@@ -1558,8 +1635,10 @@
     grid-column: auto;
   }
 
+  .auth-card-clean,
+  .role-gate,
   .screening-card {
-    padding: 22px 18px;
+    padding: 24px 20px;
   }
 
   .reading-sheet {
