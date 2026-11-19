@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 
 const PACE_BARS = [
@@ -35,12 +35,182 @@ function App() {
   const [showPassword, setShowPassword] = useState(false)
   const [status, setStatus] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [user, setUser] = useState(null)
+  const [children, setChildren] = useState([])
+  const [selectedChild, setSelectedChild] = useState(null)
+  const [screenings, setScreenings] = useState([])
+  const [dashboardLoading, setDashboardLoading] = useState(false)
+  const [screeningsLoading, setScreeningsLoading] = useState(false)
+  const [showChildForm, setShowChildForm] = useState(false)
+  const [childSubmitting, setChildSubmitting] = useState(false)
+  const [dashboardMessage, setDashboardMessage] = useState(null)
+
+  const API_URL = 'http://127.0.0.1:8000'
 
   function goToScreen(nextScreen) {
     setScreen(nextScreen)
     setStatus(null)
     setShowPassword(false)
   }
+
+  async function loadScreenings(childId, accessToken = localStorage.getItem('token')) {
+    if (!childId || !accessToken) {
+      setScreenings([])
+      return
+    }
+
+    setScreeningsLoading(true)
+    try {
+      const response = await fetch(`${API_URL}/api/children/${childId}/screenings`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.detail || 'Не удалось загрузить историю проверок.')
+      }
+
+      const data = await response.json()
+      setScreenings(data)
+    } catch (error) {
+      setScreenings([])
+      setDashboardMessage(error.message || 'Не удалось загрузить историю проверок.')
+    } finally {
+      setScreeningsLoading(false)
+    }
+  }
+
+  async function loadDashboard(accessToken = localStorage.getItem('token')) {
+    if (!accessToken) return
+
+    setDashboardLoading(true)
+    setDashboardMessage(null)
+
+    try {
+      const headers = { Authorization: `Bearer ${accessToken}` }
+      const [userResponse, childrenResponse] = await Promise.all([
+        fetch(`${API_URL}/api/users/me`, { headers }),
+        fetch(`${API_URL}/api/children`, { headers }),
+      ])
+
+      if (userResponse.status === 401 || childrenResponse.status === 401) {
+        localStorage.removeItem('token')
+        setUser(null)
+        setScreen('login')
+        setStatus({ type: 'error', text: 'Сессия завершилась. Войдите ещё раз.' })
+        return
+      }
+
+      if (!userResponse.ok) {
+        throw new Error('Не удалось получить данные аккаунта.')
+      }
+      if (!childrenResponse.ok) {
+        throw new Error('Не удалось загрузить список детей.')
+      }
+
+      const currentUser = await userResponse.json()
+      const childrenData = await childrenResponse.json()
+
+      setUser(currentUser)
+
+      if (currentUser.role !== 'parent') {
+        setScreen('specialist')
+        return
+      }
+
+      setChildren(childrenData)
+      setScreen('dashboard')
+
+      if (childrenData.length > 0) {
+        setSelectedChild(childrenData[0])
+        await loadScreenings(childrenData[0].id, accessToken)
+      } else {
+        setSelectedChild(null)
+        setScreenings([])
+      }
+    } catch (error) {
+      setDashboardMessage(error.message || 'Не удалось открыть личный кабинет.')
+      setScreen('dashboard')
+    } finally {
+      setDashboardLoading(false)
+    }
+  }
+
+  async function handleAddChild(event) {
+    event.preventDefault()
+    setDashboardMessage(null)
+
+    const formElement = event.currentTarget
+    const formData = new FormData(formElement)
+    const payload = {
+      full_name: String(formData.get('full_name') || '').trim(),
+      birth_date: formData.get('birth_date'),
+      grade: String(formData.get('grade') || '').trim() || null,
+      notes: String(formData.get('notes') || '').trim() || null,
+    }
+
+    const accessToken = localStorage.getItem('token')
+    if (!accessToken) {
+      setDashboardMessage('Войдите в аккаунт, чтобы добавить ребёнка.')
+      setScreen('login')
+      return
+    }
+
+    setChildSubmitting(true)
+    try {
+      const response = await fetch(`${API_URL}/api/children`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(payload),
+      })
+
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(result.detail || 'Не удалось добавить профиль ребёнка.')
+      }
+
+      setChildren((current) => [...current, result])
+      setSelectedChild(result)
+      setScreenings([])
+      setShowChildForm(false)
+      formElement.reset()
+      setDashboardMessage('Профиль ребёнка успешно добавлен.')
+      await loadScreenings(result.id, accessToken)
+    } catch (error) {
+      setDashboardMessage(error.message || 'Не удалось добавить профиль ребёнка.')
+    } finally {
+      setChildSubmitting(false)
+    }
+  }
+
+  async function selectChild(child) {
+    setSelectedChild(child)
+    setDashboardMessage(null)
+    await loadScreenings(child.id)
+  }
+
+  function handleLogout() {
+    localStorage.removeItem('token')
+    setUser(null)
+    setChildren([])
+    setSelectedChild(null)
+    setScreenings([])
+    setScreen('intro')
+    setStatus(null)
+    setDashboardMessage(null)
+  }
+
+  useEffect(() => {
+    const savedToken = localStorage.getItem('token')
+    if (savedToken) {
+      loadDashboard(savedToken)
+    }
+    // Проверяем сохранённую сессию один раз при открытии приложения.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleRegister(event) {
     event.preventDefault()
@@ -64,7 +234,7 @@ function App() {
 
     setIsSubmitting(true)
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/auth/register', {
+      const response = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -105,7 +275,7 @@ function App() {
 
     setIsSubmitting(true)
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/auth/login', {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: urlEncodedData.toString(),
@@ -114,10 +284,8 @@ function App() {
       if (response.ok) {
         const data = await response.json()
         localStorage.setItem('token', data.access_token)
-        setStatus({
-          type: 'success',
-          text: 'Вход выполнен. JWT-токен сохранён в браузере.',
-        })
+        setStatus(null)
+        await loadDashboard(data.access_token)
       } else {
         const errorData = await response.json()
         setStatus({
@@ -142,7 +310,7 @@ function App() {
           <button
             type="button"
             className="brand"
-            onClick={() => goToScreen('intro')}
+            onClick={() => goToScreen(user?.role === 'parent' ? 'dashboard' : 'intro')}
           >
             <BrandLogo />
             <span className="brand-text">ReadCheck</span>
@@ -150,32 +318,43 @@ function App() {
           </button>
 
           <nav className="topbar-actions" aria-label="Навигация">
-            {screen !== 'intro' && (
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={() => goToScreen('intro')}
-              >
-                О платформе
-              </button>
-            )}
-            {screen !== 'login' && (
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={() => goToScreen('login')}
-              >
-                Войти
-              </button>
-            )}
-            {screen !== 'register' && (
-              <button
-                type="button"
-                className="btn-dark-sm"
-                onClick={() => goToScreen('register')}
-              >
-                Регистрация
-              </button>
+            {user ? (
+              <>
+                <span className="topbar-user-name">{user.full_name}</span>
+                <button type="button" className="btn-ghost" onClick={handleLogout}>
+                  Выйти
+                </button>
+              </>
+            ) : (
+              <>
+                {screen !== 'intro' && (
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    onClick={() => goToScreen('intro')}
+                  >
+                    О платформе
+                  </button>
+                )}
+                {screen !== 'login' && (
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    onClick={() => goToScreen('login')}
+                  >
+                    Войти
+                  </button>
+                )}
+                {screen !== 'register' && (
+                  <button
+                    type="button"
+                    className="btn-dark-sm"
+                    onClick={() => goToScreen('register')}
+                  >
+                    Регистрация
+                  </button>
+                )}
+              </>
             )}
           </nav>
         </div>
@@ -714,6 +893,189 @@ function App() {
                   Регистрация
                 </button>
               </div>
+            </div>
+          </section>
+        )}
+
+        {/* ==================== 4. КАБИНЕТ РОДИТЕЛЯ ==================== */}
+        {screen === 'dashboard' && (
+          <section className="dashboard-page">
+            <div className="dashboard-heading">
+              <div>
+                <span className="dashboard-eyebrow">ЛИЧНЫЙ КАБИНЕТ</span>
+                <h1>Здравствуйте, {user?.full_name?.split(' ')[1] || user?.full_name || 'родитель'}!</h1>
+                <p>Здесь находятся профили детей и история их проверок чтения.</p>
+              </div>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => setShowChildForm((value) => !value)}
+              >
+                {showChildForm ? 'Скрыть форму' : '+ Добавить ребёнка'}
+              </button>
+            </div>
+
+            {dashboardMessage && (
+              <p className="dashboard-message" role="status">{dashboardMessage}</p>
+            )}
+
+            {dashboardLoading ? (
+              <div className="dashboard-empty">Загружаем личный кабинет…</div>
+            ) : (
+              <>
+                {showChildForm && (
+                  <form className="child-form-card" onSubmit={handleAddChild}>
+                    <div className="dashboard-card-heading">
+                      <div>
+                        <span className="dashboard-eyebrow">НОВЫЙ ПРОФИЛЬ</span>
+                        <h2>Добавить ребёнка</h2>
+                      </div>
+                    </div>
+                    <div className="child-form-grid">
+                      <label className="dashboard-field">
+                        <span>Имя и фамилия ребёнка</span>
+                        <input name="full_name" type="text" placeholder="Например, Маша Смирнова" required />
+                      </label>
+                      <label className="dashboard-field">
+                        <span>Дата рождения</span>
+                        <input name="birth_date" type="date" required />
+                      </label>
+                      <label className="dashboard-field">
+                        <span>Класс</span>
+                        <input name="grade" type="text" placeholder="Например, 2 класс" />
+                      </label>
+                      <label className="dashboard-field child-notes-field">
+                        <span>Дополнительная информация (необязательно)</span>
+                        <textarea name="notes" rows="2" placeholder="Комментарий для себя" />
+                      </label>
+                    </div>
+                    <div className="child-form-actions">
+                      <button type="button" className="btn-secondary" onClick={() => setShowChildForm(false)}>
+                        Отмена
+                      </button>
+                      <button type="submit" className="btn-primary" disabled={childSubmitting}>
+                        {childSubmitting ? 'Сохраняем…' : 'Сохранить профиль'}
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                <div className="dashboard-grid">
+                  <section className="dashboard-card children-card">
+                    <div className="dashboard-card-heading">
+                      <div>
+                        <span className="dashboard-eyebrow">СЕМЬЯ</span>
+                        <h2>Мои дети</h2>
+                      </div>
+                      <span className="dashboard-count">{children.length}</span>
+                    </div>
+
+                    {children.length === 0 ? (
+                      <div className="dashboard-empty">
+                        <div className="dashboard-empty-icon">＋</div>
+                        <h3>Профилей пока нет</h3>
+                        <p>Добавьте профиль ребёнка, чтобы сохранять результаты проверок и следить за динамикой.</p>
+                        <button type="button" className="btn-primary" onClick={() => setShowChildForm(true)}>
+                          Добавить первого ребёнка
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="children-list">
+                        {children.map((child) => (
+                          <button
+                            type="button"
+                            key={child.id}
+                            className={selectedChild?.id === child.id ? 'child-list-item active' : 'child-list-item'}
+                            onClick={() => selectChild(child)}
+                          >
+                            <span className="child-avatar">{child.full_name?.trim()?.charAt(0)?.toUpperCase() || 'Р'}</span>
+                            <span className="child-list-copy">
+                              <strong>{child.full_name}</strong>
+                              <small>{child.grade || 'Класс не указан'}</small>
+                            </span>
+                            <span className="child-arrow">›</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+
+                  <section className="dashboard-card progress-card">
+                    <div className="dashboard-card-heading">
+                      <div>
+                        <span className="dashboard-eyebrow">РЕЗУЛЬТАТЫ</span>
+                        <h2>{selectedChild ? selectedChild.full_name : 'Прогресс чтения'}</h2>
+                      </div>
+                    </div>
+
+                    {!selectedChild ? (
+                      <div className="dashboard-empty compact">
+                        <p>Выберите профиль ребёнка или добавьте первого ребёнка.</p>
+                      </div>
+                    ) : screeningsLoading ? (
+                      <div className="dashboard-empty compact">Загружаем историю проверок…</div>
+                    ) : screenings.length === 0 ? (
+                      <div className="dashboard-empty compact">
+                        <h3>Пока нет результатов</h3>
+                        <p>После прохождения скрининга здесь появятся скорость чтения, понимание текста и история изменений.</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="progress-summary-grid">
+                          <div className="progress-summary-tile">
+                            <span>Последняя скорость</span>
+                            <strong>{Number(screenings[0].words_per_minute).toFixed(1)} <small>сл/мин</small></strong>
+                          </div>
+                          <div className="progress-summary-tile">
+                            <span>Понимание текста</span>
+                            <strong>{Number(screenings[0].comprehension_score).toFixed(1)}<small>%</small></strong>
+                          </div>
+                        </div>
+
+                        {screenings.length > 1 && (
+                          <div className="progress-change-note">
+                            Динамика к предыдущей проверке: скорость{' '}
+                            <strong>
+                              {Number(screenings[0].words_per_minute) - Number(screenings[1].words_per_minute) >= 0 ? '+' : ''}
+                              {(Number(screenings[0].words_per_minute) - Number(screenings[1].words_per_minute)).toFixed(1)} сл/мин
+                            </strong>, понимание{' '}
+                            <strong>
+                              {Number(screenings[0].comprehension_score) - Number(screenings[1].comprehension_score) >= 0 ? '+' : ''}
+                              {(Number(screenings[0].comprehension_score) - Number(screenings[1].comprehension_score)).toFixed(1)} п.п.
+                            </strong>.
+                          </div>
+                        )}
+
+                        <h3 className="screening-history-title">История проверок</h3>
+                        <div className="screening-history-list">
+                          {screenings.map((item) => (
+                            <article className="screening-history-item" key={item.id}>
+                              <div className="screening-date">
+                                {item.created_at ? new Date(item.created_at).toLocaleDateString('ru-RU') : 'Дата не указана'}
+                              </div>
+                              <div className="screening-metrics-row">
+                                <span><strong>{Number(item.words_per_minute).toFixed(1)}</strong> сл/мин</span>
+                                <span><strong>{Number(item.comprehension_score).toFixed(1)}%</strong> понимание</span>
+                              </div>
+                              <p>{item.parent_summary}</p>
+                            </article>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </section>
+                </div>
+              </>
+            )}
+          </section>
+        )}
+
+        {screen === 'specialist' && (
+          <section className="dashboard-page">
+            <div className="dashboard-card specialist-placeholder">
+              <span className="dashboard-eyebrow">ЛИЧНЫЙ КАБИНЕТ</span>
+              <h1>Здравствуйте, {user?.full_name || 'специалист'}!</h1>
+              <p>Авторизация работает. Кабинет специалиста будет реализован отдельным модулем.</p>
             </div>
           </section>
         )}

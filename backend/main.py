@@ -81,6 +81,35 @@ def list_children(
     return db.query(models.Child).filter(models.Child.guardian_id == current_user.id).all()
 
 
+@app.get(
+    "/api/children/{child_id}/screenings",
+    response_model=List[schemas.ScreeningParentOut],
+)
+def list_child_screenings(
+    child_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    # Родитель может просматривать историю только ребёнка из своего аккаунта.
+    child = (
+        db.query(models.Child)
+        .filter(
+            models.Child.id == child_id,
+            models.Child.guardian_id == current_user.id,
+        )
+        .first()
+    )
+    if not child:
+        raise HTTPException(status_code=404, detail="Профиль ребёнка не найден")
+
+    return (
+        db.query(models.ScreeningResult)
+        .filter(models.ScreeningResult.child_id == child_id)
+        .order_by(models.ScreeningResult.created_at.desc())
+        .all()
+    )
+
+
 @app.post(
     "/api/screenings",
     response_model=Union[schemas.ScreeningSpecialistOut, schemas.ScreeningParentOut],
