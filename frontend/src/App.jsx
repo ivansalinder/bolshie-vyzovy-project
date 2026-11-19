@@ -1,5 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
+
+const API_BASE = 'http://127.0.0.1:8000'
+const SCREENING_ENDPOINT = `${API_BASE}/api/screenings`
+const CHILDREN_STORAGE_KEY = 'readcheck_children_v1'
 
 const PACE_BARS = [
   { h: 42, type: 'ok' },
@@ -16,12 +20,127 @@ const PACE_BARS = [
   { h: 52, type: 'ok' },
 ]
 
+/* =====================================================================
+ * ЗАГЛУШКИ ТЕКСТОВ И ВОПРОСОВ (до получения методички от команды методистов)
+ * ===================================================================== */
+const MOCK_MODULES = [
+  {
+    id: 'stub-grade-1-2',
+    title: 'Модуль А · «Котёнок и лужа»',
+    levelLabel: '1–2 класс (демо-текст)',
+    text: 'Утром рыжий котёнок Тишка выбежал во двор и увидел большую блестящую лужу после ночного дождя. В воде отражались белые облака и ветки старой яблони. Тишка осторожно коснулся лужи лапой. Вода дрогнула, и облака распались на десятки весёлых кругов. Котёнок удивился, отряхнул лапку и побежал звать девочку Машу.',
+    questions: [
+      {
+        id: 'q1',
+        prompt: 'Как звали рыжего котёнка?',
+        options: ['Тишка', 'Барсик', 'Пушок'],
+        correctIndex: 0,
+      },
+      {
+        id: 'q2',
+        prompt: 'Что отражалось в луже после дождя?',
+        options: [
+          'Белые облака и ветки яблони',
+          'Крыша дома и птицы',
+          'Солнце и деревянный забор',
+        ],
+        correctIndex: 0,
+      },
+      {
+        id: 'q3',
+        prompt: 'Кого котёнок побежал звать во двор?',
+        options: ['Девочку Машу', 'Маму-кошку', 'Щенка Шарика'],
+        correctIndex: 0,
+      },
+    ],
+  },
+  {
+    id: 'stub-grade-3-4',
+    title: 'Модуль Б · «Зимняя метеостанция»',
+    levelLabel: '3–4 класс (демо-текст)',
+    text: 'На краю соснового леса стояла старая метеостанция. Каждое утро дежурный записывал температуру воздуха, направление ветра и высоту снежного покрова. Однажды зимой приборы показали резкое падение давления. Через два часа поднялась сильная метель, и тропинку к станции быстро замело. Зато предупреждение метеорологов помогло жителям соседнего посёлка вовремя отменить дальнюю поездку и подготовиться к непогоде.',
+    questions: [
+      {
+        id: 'q1',
+        prompt: 'Где находилась метеостанция?',
+        options: [
+          'На краю соснового леса',
+          'На берегу широкой реки',
+          'В центре большого города',
+        ],
+        correctIndex: 0,
+      },
+      {
+        id: 'q2',
+        prompt: 'Что показали приборы за два часа до метели?',
+        options: [
+          'Резкое падение давления',
+          'Сильное потепление',
+          'Направление северного ветра',
+        ],
+        correctIndex: 0,
+      },
+      {
+        id: 'q3',
+        prompt: 'Чем помогло предупреждение метеорологов?',
+        options: [
+          'Жители вовремя отменили дальнюю поездку',
+          'Дорогу успели расчистить до снегопада',
+          'В посёлке заранее включили отопление',
+        ],
+        correctIndex: 0,
+      },
+    ],
+  },
+]
+
+function formatTime(totalSeconds) {
+  const mins = String(Math.floor(totalSeconds / 60)).padStart(2, '0')
+  const secs = String(totalSeconds % 60).padStart(2, '0')
+  return `${mins}:${secs}`
+}
+
+function formatBirthDate(dateStr) {
+  if (!dateStr) return '—'
+  const parts = dateStr.split('-')
+  if (parts.length !== 3) return dateStr
+  return `${parts[2]}.${parts[1]}.${parts[0]}`
+}
+
+function calculateAge(dateStr) {
+  if (!dateStr) return null
+  const birth = new Date(dateStr)
+  if (Number.isNaN(birth.getTime())) return null
+  const today = new Date()
+  let age = today.getFullYear() - birth.getFullYear()
+  const monthDiff = today.getMonth() - birth.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age -= 1
+  }
+  return age >= 0 ? age : null
+}
+
+// Автоматически формируем обезличенный код ученика по его ID
+function formatChildCode(id) {
+  const digits = String(id).slice(-4).padStart(4, '0')
+  return `RC-${digits}`
+}
+
+function loadSavedChildren() {
+  try {
+    const raw = localStorage.getItem(CHILDREN_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
 function BrandLogo() {
   return (
     <span className="brand-mark" aria-hidden="true">
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
         <rect x="2" y="3" width="14" height="2.4" rx="1.2" fill="#FFFFFF" />
-        <rect x="2" y="7.8" width="9.5" height="2.4" rx="1.2" fill="#E84C22" />
+        <rect x="2" y="7.8" width="9.5" height="2.4" rx="1.2" fill="#E3F6F4" />
         <rect x="2" y="12.6" width="12" height="2.4" rx="1.2" fill="#FFFFFF" />
       </svg>
     </span>
@@ -29,17 +148,109 @@ function BrandLogo() {
 }
 
 function App() {
-  const [screen, setScreen] = useState('intro') // 'intro' | 'register' | 'login'
+  const [token, setToken] = useState(() => localStorage.getItem('token') || '')
+  const [userEmail, setUserEmail] = useState(() => localStorage.getItem('userEmail') || '')
+
+  // Экраны: 'intro' | 'register' | 'login' | 'cabinet' | 'screening'
+  const [screen, setScreen] = useState(() =>
+    localStorage.getItem('token') ? 'cabinet' : 'intro'
+  )
+
   const [previewRole, setPreviewRole] = useState('parent')
-  const [role, setRole] = useState('parent')
+  const [role, setRole] = useState(null)
   const [showPassword, setShowPassword] = useState(false)
   const [status, setStatus] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Данные кабинета (ChildOut)
+  const [childrenList, setChildrenList] = useState(loadSavedChildren)
+
+  // Состояние окна скрининга
+  const [activeChild, setActiveChild] = useState(null)
+  const [selectedModuleId, setSelectedModuleId] = useState(MOCK_MODULES[0].id)
+  const [consentAccepted, setConsentAccepted] = useState(false)
+  const [testStage, setTestStage] = useState('ready') // 'ready' | 'reading' | 'questions' | 'result'
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [flaggedWords, setFlaggedWords] = useState([])
+  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0)
+  const [answers, setAnswers] = useState({})
+  const [lastResult, setLastResult] = useState(null)
+  const [showRawJson, setShowRawJson] = useState(false)
+
+  useEffect(() => {
+    if (screen !== 'screening' || testStage !== 'reading') return
+    const intervalId = setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1)
+    }, 1000)
+    return () => clearInterval(intervalId)
+  }, [screen, testStage])
+
+  // Подтягиваем профили детей с бэкенда при наличии токена
+  useEffect(() => {
+    if (!token) return
+    let cancelled = false
+
+    async function fetchChildren() {
+      try {
+        const response = await fetch(`${API_BASE}/api/children`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!response.ok || cancelled) return
+        const data = await response.json()
+        if (!Array.isArray(data)) return
+
+        setChildrenList((prev) => {
+          const prevById = new Map(prev.map((item) => [item.id, item]))
+          const merged = data.map((item) => ({
+            id: item.id,
+            guardian_id: item.guardian_id,
+            full_name: item.full_name,
+            birth_date: item.birth_date,
+            grade: item.grade || '',
+            notes: item.notes || '',
+            lastResult: prevById.get(item.id)?.lastResult || null,
+          }))
+          localStorage.setItem(CHILDREN_STORAGE_KEY, JSON.stringify(merged))
+          return merged
+        })
+      } catch {
+        // Остаёмся на локальном кэше
+      }
+    }
+
+    fetchChildren()
+    return () => {
+      cancelled = true
+    }
+  }, [token])
+
+  function persistChildren(nextList) {
+    setChildrenList(nextList)
+    localStorage.setItem(CHILDREN_STORAGE_KEY, JSON.stringify(nextList))
+  }
 
   function goToScreen(nextScreen) {
     setScreen(nextScreen)
     setStatus(null)
     setShowPassword(false)
+    if (nextScreen === 'register') {
+      setRole(null)
+    }
+  }
+
+  function handleSelectRole(chosenRole) {
+    setRole(chosenRole)
+    setStatus(null)
+    setShowPassword(false)
+  }
+
+  function handleLogout() {
+    localStorage.removeItem('token')
+    localStorage.removeItem('userEmail')
+    setToken('')
+    setUserEmail('')
+    setActiveChild(null)
+    goToScreen('intro')
   }
 
   async function handleRegister(event) {
@@ -64,7 +275,7 @@ function App() {
 
     setIsSubmitting(true)
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/auth/register', {
+      const response = await fetch(`${API_BASE}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -81,7 +292,10 @@ function App() {
         const errorData = await response.json()
         setStatus({
           type: 'error',
-          text: errorData.detail || 'Не удалось завершить регистрацию.',
+          text:
+            typeof errorData.detail === 'string'
+              ? errorData.detail
+              : 'Не удалось завершить регистрацию.',
         })
       }
     } catch {
@@ -99,13 +313,14 @@ function App() {
     setStatus(null)
 
     const formData = new FormData(event.target)
+    const emailValue = formData.get('email')
     const urlEncodedData = new URLSearchParams()
-    urlEncodedData.append('username', formData.get('email'))
+    urlEncodedData.append('username', emailValue)
     urlEncodedData.append('password', formData.get('password'))
 
     setIsSubmitting(true)
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/auth/login', {
+      const response = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: urlEncodedData.toString(),
@@ -114,15 +329,19 @@ function App() {
       if (response.ok) {
         const data = await response.json()
         localStorage.setItem('token', data.access_token)
-        setStatus({
-          type: 'success',
-          text: 'Вход выполнен. JWT-токен сохранён в браузере.',
-        })
+        localStorage.setItem('userEmail', emailValue)
+        setToken(data.access_token)
+        setUserEmail(emailValue)
+        setScreen('cabinet')
+        setStatus(null)
       } else {
         const errorData = await response.json()
         setStatus({
           type: 'error',
-          text: errorData.detail || 'Неверная почта или пароль.',
+          text:
+            typeof errorData.detail === 'string'
+              ? errorData.detail
+              : 'Неверная почта или пароль.',
         })
       }
     } catch {
@@ -135,6 +354,238 @@ function App() {
     }
   }
 
+  async function handleAddChild(event) {
+    event.preventDefault()
+    setStatus(null)
+
+    const formData = new FormData(event.target)
+
+    const childPayload = {
+      full_name: formData.get('full_name').trim(),
+      birth_date: formData.get('birth_date'),
+      grade: formData.get('grade') || null,
+      notes: formData.get('notes').trim() || null,
+    }
+
+    setIsSubmitting(true)
+    try {
+      const response = await fetch(`${API_BASE}/api/children`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(childPayload),
+      })
+
+      if (response.ok) {
+        const serverChild = await response.json()
+        const newChild = {
+          id: serverChild.id,
+          guardian_id: serverChild.guardian_id,
+          full_name: serverChild.full_name,
+          birth_date: serverChild.birth_date,
+          grade: serverChild.grade || '',
+          notes: serverChild.notes || '',
+          lastResult: null,
+        }
+        persistChildren([newChild, ...childrenList])
+        setStatus({
+          type: 'success',
+          text: `Профиль «${newChild.full_name}» создан. Присвоен код: ${formatChildCode(newChild.id)}.`,
+        })
+        event.target.reset()
+        return
+      }
+
+      if (response.status === 401) {
+        setStatus({
+          type: 'error',
+          text: 'Сессия истекла. Выйдите и войдите в аккаунт заново.',
+        })
+        return
+      }
+
+      const errorData = await response.json().catch(() => ({}))
+      setStatus({
+        type: 'error',
+        text:
+          typeof errorData.detail === 'string'
+            ? `Ошибка API: ${errorData.detail}`
+            : `Ошибка API (HTTP ${response.status}).`,
+      })
+    } catch {
+      const localChild = {
+        id: Date.now(),
+        ...childPayload,
+        lastResult: null,
+      }
+      persistChildren([localChild, ...childrenList])
+      setStatus({
+        type: 'success',
+        text: `Профиль «${localChild.full_name}» создан локально. Код: ${formatChildCode(localChild.id)}.`,
+      })
+      event.target.reset()
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  function handleRemoveChild(childId) {
+    persistChildren(childrenList.filter((c) => c.id !== childId))
+  }
+
+  function openScreeningForChild(child) {
+    const defaultMod =
+      child.grade === '3 класс' || child.grade === '4 класс' || child.grade === '5+ класс'
+        ? MOCK_MODULES[1].id
+        : MOCK_MODULES[0].id
+
+    setActiveChild(child)
+    setSelectedModuleId(defaultMod)
+    setConsentAccepted(false) // обязательное подтверждение перед каждым запуском
+    setTestStage('ready')
+    setElapsedSeconds(0)
+    setFlaggedWords([])
+    setCurrentQuestionIdx(0)
+    setAnswers({})
+    setLastResult(null)
+    setShowRawJson(false)
+    setScreen('screening')
+  }
+
+  const activeModule =
+    MOCK_MODULES.find((m) => m.id === selectedModuleId) || MOCK_MODULES[0]
+  const moduleWords = activeModule.text.split(/\s+/)
+
+  function startReading() {
+    if (!consentAccepted) return
+    setElapsedSeconds(0)
+    setFlaggedWords([])
+    setTestStage('reading')
+  }
+
+  function toggleWordFlag(index) {
+    setFlaggedWords((prev) =>
+      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
+    )
+  }
+
+  function finishReading() {
+    setCurrentQuestionIdx(0)
+    setAnswers({})
+    setTestStage('questions')
+  }
+
+  function selectAnswer(questionId, optionIdx) {
+    setAnswers((prev) => ({ ...prev, [questionId]: optionIdx }))
+  }
+
+  async function finishScreening() {
+    const durationSec = Math.max(elapsedSeconds, 1)
+    const totalWords = moduleWords.length
+    const errorsCount = flaggedWords.length
+    const minutes = durationSec / 60
+
+    const netWpm = Math.max(0, Math.round((totalWords - errorsCount) / minutes))
+    const errorRate = Number(((errorsCount / totalWords) * 100).toFixed(1))
+
+    const totalQuestions = activeModule.questions.length
+    const correctAnswers = activeModule.questions.filter(
+      (q) => answers[q.id] === q.correctIndex
+    ).length
+    const comprehensionPct = Math.round((correctAnswers / totalQuestions) * 100)
+
+    const rawEventsPayload = {
+      child_code: formatChildCode(activeChild.id),
+      consent_152fz: true,
+      module_id: activeModule.id,
+      module_title: activeModule.title,
+      flagged_indices: flaggedWords,
+      flagged_words: flaggedWords.map((i) => moduleWords[i]),
+      answers,
+    }
+
+    const submitPayload = {
+      child_id: Number(activeChild.id),
+      word_Count: totalWords,
+      reading_time_seconds: Number(durationSec),
+      correct_answers: correctAnswers,
+      total_questions: totalQuestions,
+      errors_made: errorsCount,
+      raw_events: rawEventsPayload,
+    }
+
+    let serverData = null
+    let savedToApi = false
+
+    setIsSubmitting(true)
+    try {
+      if (token) {
+        const response = await fetch(SCREENING_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(submitPayload),
+        })
+        if (response.ok) {
+          serverData = await response.json()
+          savedToApi = true
+        }
+      }
+    } catch {
+      // Фолбэк на локальный расчёт
+    } finally {
+      setIsSubmitting(false)
+    }
+
+    const displayWpm =
+      serverData?.words_per_minute !== undefined
+        ? Math.round(serverData.words_per_minute)
+        : netWpm
+
+    const displayComprehension =
+      serverData?.comprehension_score !== undefined
+        ? serverData.comprehension_score <= 1
+          ? Math.round(serverData.comprehension_score * 100)
+          : Math.round(serverData.comprehension_score)
+        : comprehensionPct
+
+    const sessionResult = {
+      id: serverData?.id ?? Date.now(),
+      moduleId: activeModule.id,
+      moduleTitle: activeModule.title,
+      completedAt: serverData?.created_at || new Date().toISOString(),
+      savedToApi,
+      durationSec,
+      totalWords,
+      errorsCount: serverData?.error_count ?? errorsCount,
+      netWpm: displayWpm,
+      errorRate,
+      correctAnswers,
+      totalQuestions,
+      comprehensionPct: displayComprehension,
+      parentSummary: serverData?.parent_summary || null,
+      specialistMetrics: serverData?.specialist_metrics || null,
+      rawData: serverData?.raw_data || rawEventsPayload,
+    }
+
+    setLastResult(sessionResult)
+    setTestStage('result')
+
+    if (activeChild) {
+      const updated = childrenList.map((c) =>
+        c.id === activeChild.id ? { ...c, lastResult: sessionResult } : c
+      )
+      persistChildren(updated)
+    }
+  }
+
+  const currentQuestion = activeModule.questions[currentQuestionIdx]
+  const currentAnswer = currentQuestion ? answers[currentQuestion.id] : undefined
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -142,40 +593,63 @@ function App() {
           <button
             type="button"
             className="brand"
-            onClick={() => goToScreen('intro')}
+            onClick={() => goToScreen(token ? 'cabinet' : 'intro')}
           >
             <BrandLogo />
             <span className="brand-text">ReadCheck</span>
-            <span className="brand-version">скрининг v1.0</span>
           </button>
 
           <nav className="topbar-actions" aria-label="Навигация">
-            {screen !== 'intro' && (
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={() => goToScreen('intro')}
-              >
-                О платформе
-              </button>
-            )}
-            {screen !== 'login' && (
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={() => goToScreen('login')}
-              >
-                Войти
-              </button>
-            )}
-            {screen !== 'register' && (
-              <button
-                type="button"
-                className="btn-dark-sm"
-                onClick={() => goToScreen('register')}
-              >
-                Регистрация
-              </button>
+            {token ? (
+              <>
+                {userEmail && <span className="user-chip">{userEmail}</span>}
+                {screen !== 'cabinet' && (
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    onClick={() => goToScreen('cabinet')}
+                  >
+                    В кабинет
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="btn-nav-primary"
+                  onClick={handleLogout}
+                >
+                  Выйти
+                </button>
+              </>
+            ) : (
+              <>
+                {screen !== 'intro' && (
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    onClick={() => goToScreen('intro')}
+                  >
+                    О платформе
+                  </button>
+                )}
+                {screen !== 'login' && (
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    onClick={() => goToScreen('login')}
+                  >
+                    Войти
+                  </button>
+                )}
+                {screen !== 'register' && (
+                  <button
+                    type="button"
+                    className="btn-nav-primary"
+                    onClick={() => goToScreen('register')}
+                  >
+                    Регистрация
+                  </button>
+                )}
+              </>
             )}
           </nav>
         </div>
@@ -188,13 +662,13 @@ function App() {
             <section className="hero-grid">
               <div className="hero-copy">
                 <h1>
-                  Цифровой скрининг <span>навыков чтения</span> за 5 минут
+                  Проверка <span>навыков чтения</span> у школьников за 5 минут
                 </h1>
 
                 <p className="hero-lead">
-                  Фиксируем темп чтения, точность и понимание текста. Родители получают
-                  ясный вывод без сложной терминологии, а логопеды и педагоги —
-                  детальные метрики и сырые данные сессий.
+                  Оцениваем скорость чтения, точность и понимание смысла текста. Родители
+                  получают понятное заключение, а логопеды и педагоги — подробный
+                  протокол и историю прохождений.
                 </p>
 
                 <div className="hero-cta-row">
@@ -215,32 +689,13 @@ function App() {
                     Войти в кабинет
                   </button>
                 </div>
-
-                <div className="hero-meta">
-                  <span className="hero-meta-item">
-                    <span className="meta-dot" />
-                    Кабинеты родителя и специалиста
-                  </span>
-                  <span className="hero-meta-item">
-                    <span className="meta-dot" />
-                    Хранение данных в РФ (152-ФЗ)
-                  </span>
-                </div>
               </div>
 
-              {/* Интерактивный виджет: переключение отчёта прямо на стартовой */}
-              <div className="preview-window" aria-label="Пример работы скрининга">
+              <div className="preview-window" aria-label="Пример отчёта скрининга">
                 <div className="preview-bar">
-                  <div className="preview-session">
-                    <div className="window-dots" aria-hidden="true">
-                      <span />
-                      <span />
-                      <span />
-                    </div>
-                    <span className="preview-session-label">
-                      сессия #042 · 2 класс
-                    </span>
-                  </div>
+                  <span className="preview-session-label">
+                    Пример отчёта · 2 класс
+                  </span>
 
                   <div className="mode-pills" role="tablist" aria-label="Режим отчёта">
                     <button
@@ -250,7 +705,7 @@ function App() {
                       className={previewRole === 'parent' ? 'mode-pill active' : 'mode-pill'}
                       onClick={() => setPreviewRole('parent')}
                     >
-                      Вид родителя
+                      Для родителя
                     </button>
                     <button
                       type="button"
@@ -259,7 +714,7 @@ function App() {
                       className={previewRole === 'specialist' ? 'mode-pill active' : 'mode-pill'}
                       onClick={() => setPreviewRole('specialist')}
                     >
-                      Вид специалиста
+                      Для специалиста
                     </button>
                   </div>
                 </div>
@@ -268,8 +723,8 @@ function App() {
                   <div className="reading-sample">
                     <div className="sample-top">
                       <span>Фрагмент текста · 14 слов</span>
-                      <span className="sample-badge">
-                        {previewRole === 'parent' ? 'прочитано' : 'разметка таймингов'}
+                      <span>
+                        {previewRole === 'parent' ? 'прочитано вслух' : 'отметки по словам'}
                       </span>
                     </div>
 
@@ -289,7 +744,7 @@ function App() {
                       <div className="sample-legend">
                         <span className="legend-item">
                           <span className="legend-swatch pause" />
-                          пауза 1.4 с (сложная слоговая структура)
+                          пауза 1.4 с
                         </span>
                         <span className="legend-item">
                           <span className="legend-swatch error" />
@@ -307,8 +762,8 @@ function App() {
                           <span className="verdict-pill">2 класс</span>
                         </div>
                         <p>
-                          Ребёнок читает уверенно и хорошо улавливает смысл текста.
-                          Очная консультация не требуется — можно повторить проверку через
+                          Ребёнок читает уверенно и хорошо понимает смысл текста. Очная
+                          консультация не требуется — можно повторить проверку через
                           четверть.
                         </p>
                       </div>
@@ -340,10 +795,10 @@ function App() {
                       <div className="spec-metrics">
                         <div className="spec-tile">
                           <span className="spec-tile-label">Чистый темп</span>
-                          <span className="spec-tile-val">88 WPM</span>
+                          <span className="spec-tile-val">88 сл/мин</span>
                         </div>
                         <div className="spec-tile">
-                          <span className="spec-tile-label">Плотность ошибок</span>
+                          <span className="spec-tile-label">Доля ошибок</span>
                           <span className="spec-tile-val accent">2.4%</span>
                         </div>
                         <div className="spec-tile">
@@ -354,8 +809,7 @@ function App() {
 
                       <div className="pace-box">
                         <div className="pace-header">
-                          <span>Время чтения по словам (мс)</span>
-                          <span className="pace-code">raw_data: JSON</span>
+                          <span>Распределение пауз по словам</span>
                         </div>
                         <div className="pace-bars" aria-hidden="true">
                           {PACE_BARS.map((bar, idx) => (
@@ -373,72 +827,159 @@ function App() {
               </div>
             </section>
 
-            {/* Бенто-карточки под Hero */}
-            <section className="bento-grid" aria-label="Возможности скрининга">
-              <article className="bento-card">
-                <div>
-                  <span className="bento-tag">методика</span>
-                  <h2>Чтение + проверка смысла</h2>
+            {/* Спокойный блок этапов вместо 3 шаблонных карточек */}
+            <section className="steps-section" aria-label="Как проходит скрининг">
+              <h2 className="steps-section-title">Как проходит скрининг</h2>
+              <div className="steps-strip">
+                <div className="step-col">
+                  <span className="step-index">1</span>
+                  <h3>Профиль и код</h3>
                   <p>
-                    Скорость без понимания ничего не значит. Ребёнок читает короткий
-                    адаптированный текст и отвечает на вопросы по содержанию.
+                    Добавьте ребёнка в кабинете — система сама присвоит ему обезличенный
+                    код для защиты данных.
                   </p>
                 </div>
-                <div className="bento-footer-line">5–7 минут на одного ученика</div>
-              </article>
 
-              <article className="bento-card">
-                <div>
-                  <span className="bento-tag">2 роли</span>
-                  <h2>Разный уровень детализации</h2>
+                <div className="step-col">
+                  <span className="step-index">2</span>
+                  <h3>Чтение текста</h3>
                   <p>
-                    Один тест формирует понятную сводку для родителя и профессиональный
-                    протокол с динамикой прохождений для специалиста.
+                    Ребёнок читает короткий текст по своему классу, а система фиксирует
+                    время и отмеченные запинки.
                   </p>
                 </div>
-                <div className="bento-footer-line">parent · specialist</div>
-              </article>
 
-              <article className="bento-card dark">
-                <div>
-                  <span className="bento-tag">аналитика и наука</span>
-                  <h2>Сохранение сырых событий</h2>
+                <div className="step-col">
+                  <span className="step-index">3</span>
+                  <h3>Вопросы по смыслу</h3>
                   <p>
-                    Платформа записывает не только итоговый балл, но и структурированные
-                    данные сессии для последующего анализа и публикаций.
+                    Несколько коротких вопросов проверяют, насколько точно ребёнок понял
+                    прочитанное.
                   </p>
                 </div>
-                <div className="bento-footer-line">PostgreSQL · FastAPI · РФ</div>
-              </article>
+
+                <div className="step-col">
+                  <span className="step-index">4</span>
+                  <h3>Готовый отчёт</h3>
+                  <p>
+                    Результат сохраняется в профиле: понятный итог для семьи или
+                    детальные метрики для специалиста.
+                  </p>
+                </div>
+              </div>
             </section>
           </>
         )}
 
-        {/* ==================== 2. РЕГИСТРАЦИЯ ==================== */}
-        {screen === 'register' && (
+        {/* ==================== 2А. РЕГИСТРАЦИЯ: ШАГ 1 (ВЫБОР РОЛИ) ==================== */}
+        {screen === 'register' && !role && (
+          <section className="role-gate">
+            <button
+              type="button"
+              className="back-link"
+              onClick={() => goToScreen('intro')}
+            >
+              ← О платформе
+            </button>
+
+            <div className="role-gate-head">
+              <h1>Выберите тип аккаунта</h1>
+              <p>
+                От выбранной роли зависит состав полей регистрации и формат отчётов после
+                скрининга.
+              </p>
+            </div>
+
+            <div className="role-gate-grid">
+              <button
+                type="button"
+                className="role-choice-card parent-card"
+                onClick={() => handleSelectRole('parent')}
+              >
+                <div>
+                  <h2>Родитель</h2>
+                  <p>
+                    Для спокойной домашней проверки навыков чтения и понимания текста у
+                    ребёнка.
+                  </p>
+                  <ul className="role-choice-points">
+                    <li>Профили детей в одном кабинете</li>
+                    <li>Понятный вывод без сложных терминов</li>
+                    <li>История прохождений в динамике</li>
+                  </ul>
+                </div>
+                <span className="role-choice-cta">Продолжить как родитель →</span>
+              </button>
+
+              <button
+                type="button"
+                className="role-choice-card specialist-card"
+                onClick={() => handleSelectRole('specialist')}
+              >
+                <div>
+                  <h2>Специалист</h2>
+                  <p>
+                    Для логопедов, дефектологов и педагогов начальных классов при
+                    первичной диагностике.
+                  </p>
+                  <ul className="role-choice-points">
+                    <li>Ведение карточек группы учеников</li>
+                    <li>Чистая скорость чтения и доля ошибок</li>
+                    <li>Детальные данные сессий для анализа</li>
+                  </ul>
+                </div>
+                <span className="role-choice-cta">Продолжить как специалист →</span>
+              </button>
+            </div>
+
+            <div className="auth-switch">
+              <span>Уже есть аккаунт?</span>
+              <button
+                type="button"
+                className="link-btn"
+                onClick={() => goToScreen('login')}
+              >
+                Войти
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* ==================== 2Б. РЕГИСТРАЦИЯ: ШАГ 2 (ФОРМА) ==================== */}
+        {screen === 'register' && role && (
           <section className="auth-shell">
-            <aside className="auth-panel-dark">
+            <aside
+              className={
+                role === 'specialist'
+                  ? 'auth-panel-soft lilac-mode'
+                  : 'auth-panel-soft'
+              }
+            >
               <div>
                 <button
                   type="button"
                   className="back-link"
-                  onClick={() => goToScreen('intro')}
+                  onClick={() => setRole(null)}
                 >
-                  ← О платформе
+                  ← К выбору роли
                 </button>
               </div>
 
               <div>
-                <h1>Создать аккаунт</h1>
+                <h1>
+                  {role === 'parent'
+                    ? 'Регистрация родителя'
+                    : 'Регистрация специалиста'}
+                </h1>
                 <p>
-                  Выберите роль, чтобы система сразу настроила формат отчётов и
-                  инструменты личного кабинета.
+                  Заполните данные для создания личного кабинета — сразу после этого
+                  можно добавить профиль ребёнка и запустить тест.
                 </p>
               </div>
 
               <div className="role-preview-box">
                 <span className="role-preview-label">
-                  {role === 'parent' ? 'роль: родитель' : 'роль: специалист'}
+                  {role === 'parent' ? 'Кабинет родителя' : 'Кабинет специалиста'}
                 </span>
                 <ul className="role-preview-list">
                   {role === 'parent' ? (
@@ -450,8 +991,8 @@ function App() {
                   ) : (
                     <>
                       <li>Ведение группы учеников</li>
-                      <li>Чистая скорость (WPM) и плотность ошибок</li>
-                      <li>Доступ к сырым данным сессий (JSON)</li>
+                      <li>Чистая скорость и доля ошибок</li>
+                      <li>Доступ к данным сессий для анализа</li>
                     </>
                   )}
                 </ul>
@@ -459,38 +1000,27 @@ function App() {
             </aside>
 
             <div className="auth-panel-form">
-              <form key="register-form" onSubmit={handleRegister}>
-                <fieldset className="role-fieldset">
-                  <legend>Выберите роль</legend>
-                  <div className="role-cards">
-                    <button
-                      type="button"
-                      className={
-                        role === 'parent' ? 'role-card-btn selected' : 'role-card-btn'
-                      }
-                      aria-pressed={role === 'parent'}
-                      onClick={() => setRole('parent')}
-                    >
-                      <span className="role-card-title">Родитель</span>
-                      <span className="role-card-sub">Домашняя проверка</span>
-                    </button>
+              <div
+                className={
+                  role === 'specialist'
+                    ? 'selected-role-strip lilac'
+                    : 'selected-role-strip'
+                }
+              >
+                <span className="selected-role-info">
+                  Выбрана роль:{' '}
+                  <strong>{role === 'parent' ? 'Родитель' : 'Специалист'}</strong>
+                </span>
+                <button
+                  type="button"
+                  className="change-role-btn"
+                  onClick={() => setRole(null)}
+                >
+                  Изменить роль
+                </button>
+              </div>
 
-                    <button
-                      type="button"
-                      className={
-                        role === 'specialist'
-                          ? 'role-card-btn selected'
-                          : 'role-card-btn'
-                      }
-                      aria-pressed={role === 'specialist'}
-                      onClick={() => setRole('specialist')}
-                    >
-                      <span className="role-card-title">Специалист</span>
-                      <span className="role-card-sub">Логопед / педагог</span>
-                    </button>
-                  </div>
-                </fieldset>
-
+              <form key={`register-form-${role}`} onSubmit={handleRegister}>
                 <div className="form-grid">
                   <div className="form-field">
                     <label htmlFor="firstName">Имя</label>
@@ -592,7 +1122,11 @@ function App() {
                 </div>
 
                 <button
-                  className="btn-primary full"
+                  className={
+                    role === 'specialist'
+                      ? 'btn-primary lilac full'
+                      : 'btn-primary full'
+                  }
                   type="submit"
                   disabled={isSubmitting}
                 >
@@ -623,7 +1157,7 @@ function App() {
         {/* ==================== 3. ВХОД ==================== */}
         {screen === 'login' && (
           <section className="auth-shell">
-            <aside className="auth-panel-dark">
+            <aside className="auth-panel-soft">
               <div>
                 <button
                   type="button"
@@ -643,9 +1177,9 @@ function App() {
               </div>
 
               <div className="role-preview-box">
-                <span className="role-preview-label">авторизация: JWT</span>
+                <span className="role-preview-label">Единый вход</span>
                 <ul className="role-preview-list">
-                  <li>Единый вход для родителей и специалистов</li>
+                  <li>Подходит для родителей и специалистов</li>
                   <li>Роль определяется автоматически по аккаунту</li>
                 </ul>
               </div>
@@ -717,11 +1251,499 @@ function App() {
             </div>
           </section>
         )}
+
+        {/* ==================== 4. КАБИНЕТ: ДОБАВЛЕНИЕ РЕБЁНКА ==================== */}
+        {screen === 'cabinet' && (
+          <section className="cabinet-layout">
+            <div className="cabinet-card">
+              <h2>Добавить ребёнка</h2>
+              <p className="cabinet-sub">
+                После добавления система автоматически присвоит ребёнку обезличенный код
+                ученика для безопасного хранения результатов.
+              </p>
+
+              <form onSubmit={handleAddChild}>
+                <div className="form-grid">
+                  <div className="form-field full-width">
+                    <label htmlFor="childFullName">Имя ребёнка</label>
+                    <input
+                      id="childFullName"
+                      name="full_name"
+                      type="text"
+                      placeholder="Например: Николай"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label htmlFor="childBirthDate">Дата рождения</label>
+                    <input
+                      id="childBirthDate"
+                      name="birth_date"
+                      type="date"
+                      min="2008-01-01"
+                      max="2023-12-31"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label htmlFor="childGrade">Класс</label>
+                    <select id="childGrade" name="grade" defaultValue="2 класс">
+                      <option value="Дошкольник">Дошкольник</option>
+                      <option value="1 класс">1 класс</option>
+                      <option value="2 класс">2 класс</option>
+                      <option value="3 класс">3 класс</option>
+                      <option value="4 класс">4 класс</option>
+                      <option value="5+ класс">5+ класс</option>
+                    </select>
+                  </div>
+
+                  <div className="form-field full-width">
+                    <label htmlFor="childNotes">Примечание (необязательно)</label>
+                    <textarea
+                      id="childNotes"
+                      name="notes"
+                      placeholder="Например: занимается с логопедом, билингв"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn-primary full"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Сохраняем…' : 'Добавить профиль'}
+                </button>
+              </form>
+
+              {status && (
+                <p className={`status-banner ${status.type}`} role="status">
+                  {status.text}
+                </p>
+              )}
+            </div>
+
+            <div className="cabinet-card">
+              <div className="cabinet-header">
+                <div className="cabinet-title-row">
+                  <h2>Профили детей</h2>
+                  <span className="count-pill">{childrenList.length}</span>
+                </div>
+              </div>
+
+              {childrenList.length === 0 ? (
+                <div className="empty-state">
+                  <strong>Пока нет ни одного профиля</strong>
+                  <p>
+                    Заполните форму слева, чтобы добавить ребёнка и получить его
+                    обезличенный код для прохождения скрининга.
+                  </p>
+                </div>
+              ) : (
+                <div className="children-list">
+                  {childrenList.map((child) => {
+                    const computedAge = calculateAge(child.birth_date)
+                    return (
+                      <article key={child.id} className="child-card">
+                        <div className="child-info">
+                          <div className="child-top">
+                            <span className="child-name">{child.full_name}</span>
+                            {child.grade && (
+                              <span className="child-grade-pill">{child.grade}</span>
+                            )}
+                            <span
+                              className="child-code-pill"
+                              title="Обезличенный код для хранения результатов"
+                            >
+                              Код: {formatChildCode(child.id)}
+                            </span>
+                          </div>
+                          <div className="child-meta">
+                            Дата рождения: {formatBirthDate(child.birth_date)}
+                            {computedAge !== null ? ` (${computedAge} лет)` : ''}
+                            {child.notes ? ` · ${child.notes}` : ''}
+                          </div>
+
+                          {child.lastResult && (
+                            <div className="child-last-result">
+                              Последний тест: {child.lastResult.netWpm} сл/мин · понимание{' '}
+                              {child.lastResult.comprehensionPct}%
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="child-actions">
+                          <button
+                            type="button"
+                            className="btn-start-test"
+                            onClick={() => openScreeningForChild(child)}
+                          >
+                            Начать скрининг →
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-remove"
+                            onClick={() => handleRemoveChild(child.id)}
+                            title="Удалить профиль из списка"
+                          >
+                            Удалить
+                          </button>
+                        </div>
+                      </article>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* ==================== 5. ОКНО ПРОХОЖДЕНИЯ СКРИНИНГА ==================== */}
+        {screen === 'screening' && activeChild && (
+          <section className="screening-wrap">
+            <div className="screening-topbar">
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => goToScreen('cabinet')}
+              >
+                ← Вернуться в кабинет
+              </button>
+
+              <div className="step-pills" aria-label="Этапы скрининга">
+                <span
+                  className={`step-pill ${
+                    testStage === 'ready' ? 'active' : 'done'
+                  }`}
+                >
+                  1. Подготовка
+                </span>
+                <span
+                  className={`step-pill ${
+                    testStage === 'reading'
+                      ? 'active'
+                      : testStage === 'questions' || testStage === 'result'
+                        ? 'done'
+                        : ''
+                  }`}
+                >
+                  2. Чтение
+                </span>
+                <span
+                  className={`step-pill ${
+                    testStage === 'questions'
+                      ? 'active'
+                      : testStage === 'result'
+                        ? 'done'
+                        : ''
+                  }`}
+                >
+                  3. Вопросы
+                </span>
+                <span
+                  className={`step-pill ${testStage === 'result' ? 'active' : ''}`}
+                >
+                  4. Итог
+                </span>
+              </div>
+            </div>
+
+            <div className="screening-card">
+              <div className="stub-banner">
+                Демонстрационный режим: используются временные тексты до утверждения
+                итоговой методики.
+              </div>
+
+              {testStage === 'ready' && (
+                <>
+                  <h1>
+                    Скрининг: {activeChild.full_name} ({formatChildCode(activeChild.id)})
+                  </h1>
+                  <p className="screening-desc">
+                    Выберите тестовый текст, подтвердите согласие на обработку данных и
+                    передайте экран ребёнку.
+                  </p>
+
+                  <div className="module-picker">
+                    {MOCK_MODULES.map((mod) => (
+                      <button
+                        key={mod.id}
+                        type="button"
+                        className={
+                          selectedModuleId === mod.id
+                            ? 'module-option selected'
+                            : 'module-option'
+                        }
+                        onClick={() => setSelectedModuleId(mod.id)}
+                      >
+                        <span className="module-option-title">{mod.title}</span>
+                        <span className="module-option-meta">
+                          {mod.levelLabel} · {mod.text.split(/\s+/).length} слов ·{' '}
+                          {mod.questions.length} вопроса
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="instruction-box">
+                    <strong>Инструкция перед стартом:</strong> попросите ребёнка читать в
+                    привычном спокойном темпе — после текста будут короткие вопросы по
+                    смыслу. Если вы контролируете чтение вслух, вы сможете кликать по
+                    словам с ошибками или запинками прямо на экране.
+                  </div>
+
+                  {/* Обязательное подтверждение на обработку персональных данных */}
+                  <div className={consentAccepted ? 'consent-box accepted' : 'consent-box'}>
+                    <label className="consent-label">
+                      <input
+                        type="checkbox"
+                        checked={consentAccepted}
+                        onChange={(e) => setConsentAccepted(e.target.checked)}
+                      />
+                      <span>
+                        <strong>
+                          Подтверждаю согласие на обработку персональных данных
+                        </strong>{' '}
+                        в соответствии с Федеральным законом № 152-ФЗ «О персональных
+                        данных».
+                        <span className="consent-sub">
+                          Результаты тестирования сохраняются в обезличенном виде под
+                          кодом ученика {formatChildCode(activeChild.id)} и используются
+                          для формирования отчёта.
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+
+                  <div style={{ marginTop: '24px' }}>
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      disabled={!consentAccepted}
+                      onClick={startReading}
+                    >
+                      Начать чтение →
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {testStage === 'reading' && (
+                <>
+                  <div className="reading-header">
+                    <div>
+                      <strong>{activeModule.title}</strong>
+                      <div className="reading-hint">
+                        Клик по слову отмечает ошибку или длительную паузу (отмечено:{' '}
+                        {flaggedWords.length})
+                      </div>
+                    </div>
+
+                    <div className="timer-box" aria-live="polite">
+                      <span className="timer-dot" />
+                      {formatTime(elapsedSeconds)}
+                    </div>
+                  </div>
+
+                  <div className="reading-sheet" aria-label="Текст для чтения">
+                    {moduleWords.map((word, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className={
+                          flaggedWords.includes(idx)
+                            ? 'reading-word flagged'
+                            : 'reading-word'
+                        }
+                        onClick={() => toggleWordFlag(idx)}
+                      >
+                        {word}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="reading-footer">
+                    <span className="reading-hint">
+                      Всего слов в тексте: {moduleWords.length}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={finishReading}
+                    >
+                      Чтение завершено — перейти к вопросам →
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {testStage === 'questions' && currentQuestion && (
+                <>
+                  <div className="question-progress">
+                    Вопрос {currentQuestionIdx + 1} из {activeModule.questions.length}
+                  </div>
+
+                  <h2 className="question-title">{currentQuestion.prompt}</h2>
+
+                  <div className="options-stack">
+                    {currentQuestion.options.map((optionText, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className={
+                          currentAnswer === idx ? 'option-btn selected' : 'option-btn'
+                        }
+                        onClick={() => selectAnswer(currentQuestion.id, idx)}
+                      >
+                        <span className="option-letter">
+                          {String.fromCharCode(65 + idx)}
+                        </span>
+                        <span>{optionText}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="reading-footer" style={{ marginTop: '26px' }}>
+                    {currentQuestionIdx > 0 ? (
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={() => setCurrentQuestionIdx((prev) => prev - 1)}
+                      >
+                        ← Назад
+                      </button>
+                    ) : (
+                      <span />
+                    )}
+
+                    {currentQuestionIdx < activeModule.questions.length - 1 ? (
+                      <button
+                        type="button"
+                        className="btn-primary lilac"
+                        disabled={currentAnswer === undefined}
+                        onClick={() => setCurrentQuestionIdx((prev) => prev + 1)}
+                      >
+                        Следующий вопрос →
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        disabled={currentAnswer === undefined || isSubmitting}
+                        onClick={finishScreening}
+                      >
+                        {isSubmitting
+                          ? 'Сохраняем результат…'
+                          : 'Завершить и рассчитать итог'}
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {testStage === 'result' && lastResult && (
+                <>
+                  <div className="cabinet-header" style={{ marginBottom: '8px' }}>
+                    <h1>
+                      Скрининг завершён · {activeChild.full_name} (
+                      {formatChildCode(activeChild.id)})
+                    </h1>
+                  </div>
+
+                  {lastResult.parentSummary ? (
+                    <div className="parent-verdict" style={{ marginTop: '16px' }}>
+                      <div className="verdict-head">
+                        <span className="verdict-title">Заключение системы</span>
+                        {activeChild.grade && (
+                          <span className="verdict-pill">{activeChild.grade}</span>
+                        )}
+                      </div>
+                      <p>{lastResult.parentSummary}</p>
+                    </div>
+                  ) : (
+                    <p className="screening-desc">
+                      Результат сохранён в карточке ребёнка. Итоговые возрастные нормы и
+                      текст заключения будут подключены после утверждения методики.
+                    </p>
+                  )}
+
+                  <div className="result-grid">
+                    <div className="result-metric">
+                      <span>Темп чтения</span>
+                      <strong>{lastResult.netWpm} сл/мин</strong>
+                    </div>
+                    <div className="result-metric">
+                      <span>Время чтения</span>
+                      <strong>{formatTime(lastResult.durationSec)}</strong>
+                    </div>
+                    <div className="result-metric">
+                      <span>Ошибки / запинки</span>
+                      <strong>
+                        {lastResult.errorsCount} ({lastResult.errorRate}%)
+                      </strong>
+                    </div>
+                    <div className="result-metric">
+                      <span>Понимание текста</span>
+                      <strong>
+                        {lastResult.correctAnswers}/{lastResult.totalQuestions} (
+                        {lastResult.comprehensionPct}%)
+                      </strong>
+                    </div>
+                  </div>
+
+                  <div className="reading-footer" style={{ marginTop: '24px' }}>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => setShowRawJson((prev) => !prev)}
+                    >
+                      {showRawJson ? 'Скрыть данные сессии' : 'Показать данные сессии'}
+                    </button>
+
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={() => openScreeningForChild(activeChild)}
+                      >
+                        Пройти ещё раз
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        onClick={() => goToScreen('cabinet')}
+                      >
+                        Вернуться в кабинет
+                      </button>
+                    </div>
+                  </div>
+
+                  {showRawJson && (
+                    <pre className="json-preview">
+                      {JSON.stringify(
+                        lastResult.specialistMetrics
+                          ? {
+                              specialist_metrics: lastResult.specialistMetrics,
+                              raw_data: lastResult.rawData,
+                            }
+                          : lastResult.rawData,
+                        null,
+                        2
+                      )}
+                    </pre>
+                  )}
+                </>
+              )}
+            </div>
+          </section>
+        )}
       </main>
 
       <footer className="page-footer">
         <div className="footer-inner">
-          <span>ReadCheck · прототип платформы скрининга чтения</span>
+          <span>ReadCheck · платформа скрининга навыков чтения</span>
           <span>Ориентировочная оценка · не заменяет очную диагностику специалиста</span>
         </div>
       </footer>

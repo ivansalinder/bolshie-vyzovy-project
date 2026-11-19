@@ -1,28 +1,47 @@
 :root {
-  --bg-page: #f5f6f8;
+  /* Светлый спокойный холст для работы с детьми */
+  --bg-page: #f4f8fc;
   --bg-card: #ffffff;
-  --bg-dark: #111315;
-  --bg-dark-elevated: #1b1f23;
+  --bg-sky: #ebf4fb;
+  --bg-lilac: #f2effe;
+  --bg-mint: #e7f7f5;
 
-  --ink-main: #111315;
-  --ink-secondary: #525866;
-  --ink-muted: #868c98;
+  /* Текст — мягкий тёмно-синий графит вместо резкого чёрного */
+  --ink-main: #1f2d3d;
+  --ink-secondary: #526277;
+  --ink-muted: #7c8ca1;
 
-  --line: #e2e4e9;
-  --line-strong: #cdd0d5;
+  /* Мягкие границы */
+  --line: #dce6f1;
+  --line-strong: #c2d2e4;
 
-  --accent: #e84c22;
-  --accent-hover: #cf3d16;
-  --accent-soft: #fff1ed;
+  /* Приоритетные акценты: бирюза + сиреневый + голубой */
+  --teal: #009c8d;
+  --teal-hover: #008275;
+  --teal-soft: #e3f6f4;
+  --teal-border: #a7e0d9;
 
-  --ok: #0d9468;
-  --ok-soft: #e9f8f2;
+  --lilac: #6658c7;
+  --lilac-hover: #5446b3;
+  --lilac-soft: #f0edff;
+  --lilac-border: #cfc7fa;
 
-  --warn: #d97706;
-  --warn-soft: #fef5e7;
+  --sky: #3b82c4;
+  --sky-soft: #eaf4fd;
+  --sky-border: #bedaf5;
 
-  --err: #c92a2a;
-  --err-soft: #fff0f0;
+  /* Статусы */
+  --ok: #0d9470;
+  --ok-soft: #e6f7f1;
+  --ok-border: #b3e4d2;
+
+  --warn: #c27803;
+  --warn-soft: #fef7e8;
+  --warn-border: #f5db9e;
+
+  --err: #c93b4b;
+  --err-soft: #fdf0f2;
+  --err-border: #f3c2c8;
 
   --font-sans: 'Onest', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
@@ -50,6 +69,8 @@ body {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font-family: inherit;
 }
