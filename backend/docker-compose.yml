@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: readcheck_db
+    restart: always
+    environment:
+      POSTGRES_USER: readcheck_user
+      POSTGRES_PASSWORD: readcheck_password
+      POSTGRES_DB: readcheck_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: .
+    container_name: readcheck_api
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://readcheck_user:readcheck_password@db:5432/readcheck_db
+      SECRET_KEY: super_secret_jwt_key_change_in_prod
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+
+volumes:
+  postgres_data:
