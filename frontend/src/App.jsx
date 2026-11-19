@@ -30,7 +30,7 @@ function BrandLogo() {
 
 function App() {
   const [screen, setScreen] = useState('intro') // 'intro' | 'register' | 'login'
-  const [previewRole, setPreviewRole] = useState('parent') // интерактивное превью на главном экране
+  const [previewRole, setPreviewRole] = useState('parent')
   const [role, setRole] = useState('parent')
   const [showPassword, setShowPassword] = useState(false)
   const [status, setStatus] = useState(null)
@@ -54,14 +54,12 @@ function App() {
       password: formData.get('password'),
       role: role,
       full_name: fullName,
+      region: formData.get('region') || null,
     }
 
     if (role === 'specialist') {
       payload.organization = formData.get('organization') || null
       payload.specialization = formData.get('specialization') || null
-      payload.experience_years = formData.get('experience_years')
-        ? parseInt(formData.get('experience_years'), 10)
-        : null
     }
 
     setIsSubmitting(true)
@@ -519,6 +517,18 @@ function App() {
                   </div>
 
                   <div className="form-field full-width">
+                    <label htmlFor="region">Город / регион</label>
+                    <input
+                      id="region"
+                      name="region"
+                      type="text"
+                      placeholder="Например: Москва"
+                      autoComplete="address-level2"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-field full-width">
                     <label htmlFor="email">Электронная почта</label>
                     <input
                       id="email"
@@ -568,24 +578,13 @@ function App() {
                         />
                       </div>
 
-                      <div className="form-field">
+                      <div className="form-field full-width">
                         <label htmlFor="organization">Организация</label>
                         <input
                           id="organization"
                           name="organization"
                           type="text"
-                          placeholder="Школа или центр"
-                        />
-                      </div>
-
-                      <div className="form-field">
-                        <label htmlFor="experience">Стаж (лет)</label>
-                        <input
-                          id="experience"
-                          name="experience_years"
-                          type="number"
-                          min="0"
-                          placeholder="5"
+                          placeholder="Школа, детский сад или логопедический центр"
                         />
                       </div>
                     </>
