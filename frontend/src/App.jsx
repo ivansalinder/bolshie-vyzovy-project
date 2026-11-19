@@ -19,7 +19,13 @@ function App() {
 
     const formData = new FormData(event.target)
     
-    const fullName = `${formData.get('last_name')} ${formData.get('first_name')} ${formData.get('middle_name')}`.trim()
+    const fullName = [
+      formData.get('last_name'),
+      formData.get('first_name'),
+    ]
+    .map((value) => String(value ?? '').trim())
+    .filter(Boolean)
+    .join(' ')
 
     const payload = {
       email: formData.get('email'),
@@ -183,11 +189,6 @@ function App() {
                 <div className="form-field">
                   <label htmlFor="lastName">Фамилия</label>
                   <input id="lastName" name="last_name" type="text" placeholder="Введите фамилию" autoComplete="family-name" required />
-                </div>
-
-                <div className="form-field full-width">
-                  <label htmlFor="middleName">Отчество</label>
-                  <input id="middleName" name="middle_name" type="text" placeholder="Введите отчество" autoComplete="additional-name" />
                 </div>
 
                 <div className="form-field full-width">
