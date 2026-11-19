@@ -11,7 +11,7 @@ class UserCreate(BaseModel):
     full_name: str
     organization: Optional[str] = None
     specialization: Optional[str] = None
-    experience_years: Optional[int] = None
+    region: Optional[str] = None
 
 
 class UserOut(BaseModel):
@@ -21,7 +21,7 @@ class UserOut(BaseModel):
     full_name: str
     organization: Optional[str] = None
     specialization: Optional[str] = None
-    experience_years: Optional[int] = None
+    region: Optional[str] = None
 
     class Config:
         from_attributes = True

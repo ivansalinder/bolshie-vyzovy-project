@@ -22,7 +22,7 @@ class User(Base):
     # Дополнительные поля для специалиста (у родителя остаются NULL)
     organization = Column(String, nullable=True)
     specialization = Column(String, nullable=True)
-    experience_years = Column(Integer, nullable=True)
+    region = Column(String, nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     children = relationship("Child", back_populates="guardian", cascade="all, delete-orphan")

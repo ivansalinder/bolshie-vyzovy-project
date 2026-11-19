@@ -37,7 +37,7 @@ def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
         full_name=user_in.full_name,
         organization=user_in.organization,
         specialization=user_in.specialization,
-        experience_years=user_in.experience_years,
+        region=user_in.region,
     )
     db.add(new_user)
     db.commit()
