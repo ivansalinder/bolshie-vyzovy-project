@@ -275,7 +275,7 @@ function App() {
   const [answers, setAnswers] = useState({}) // { [itemId]: optionIdx }
   const [itemTimings, setItemTimings] = useState({}) // { [itemId]: seconds }
   const [lastResult, setLastResult] = useState(null)
-  const [reportView, setReportView] = useState('parent') // 'parent' | 'specialist'
+  const reportView = userRole === 'specialist' ? 'specialist' : 'parent'
   const [showRawJson, setShowRawJson] = useState(false)
 
   useEffect(() => {
@@ -432,6 +432,17 @@ function App() {
 
       if (response.ok) {
         const data = await response.json()
+        const profileResponse = await fetch(`${API_BASE}/api/users/me`, {
+          headers: { Authorization: `Bearer ${data.access_token}` },
+        })
+        if (!profileResponse.ok) {
+          throw new Error('Не удалось определить роль аккаунта.')
+        }
+        const profile = await profileResponse.json()
+        const authenticatedRole =
+          profile.role === 'specialist' ? 'specialist' : 'parent'
+        localStorage.setItem('userRole', authenticatedRole)
+        setUserRole(authenticatedRole)
         localStorage.setItem('token', data.access_token)
         localStorage.setItem('userEmail', emailValue)
         setToken(data.access_token)
@@ -587,7 +598,6 @@ function App() {
     setAnswers({})
     setItemTimings({})
     setLastResult(null)
-    setReportView(userRole === 'specialist' ? 'specialist' : 'parent')
     setShowRawJson(false)
     setScreen('screening')
   }
@@ -1932,31 +1942,12 @@ function App() {
                             </div>
                           </div>
 
-                          <div className="mode-pills no-print" role="tablist">
-                            <button
-                              type="button"
-                              role="tab"
-                              aria-selected={reportView === 'parent'}
-                              className={
-                                reportView === 'parent' ? 'mode-pill active' : 'mode-pill'
-                              }
-                              onClick={() => setReportView('parent')}
-                            >
-                              Отчёт родителя
-                            </button>
-                            <button
-                              type="button"
-                              role="tab"
-                              aria-selected={reportView === 'specialist'}
-                              className={
-                                reportView === 'specialist'
-                                  ? 'mode-pill active'
-                                  : 'mode-pill'
-                              }
-                              onClick={() => setReportView('specialist')}
-                            >
-                              Протокол специалиста
-                            </button>
+                          <div className="mode-pills no-print" aria-label="Тип отчёта">
+                            <span className="mode-pill active">
+                              {userRole === 'specialist'
+                                ? 'Протокол специалиста'
+                                : 'Отчёт родителя'}
+                            </span>
                           </div>
                         </div>
 
