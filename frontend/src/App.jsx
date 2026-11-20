@@ -1406,15 +1406,12 @@ function App() {
                           Нажимая кнопку «Отправить», я подтверждаю{' '}
                           <a
                             href="/personal-data-consent.html"
-                            target="_blank"
-                            rel="noopener noreferrer"
                             style={{
                               color: 'var(--lilac)',
                               fontWeight: 700,
                               textDecoration: 'underline',
                               textUnderlineOffset: '3px',
-                            }}
-                          >
+                            }} onClick={(e) => { e.preventDefault(); window.open('/personal-data-consent.html', '_blank'); }}>
                             согласие на обработку моих персональных данных
                           </a>.
 
@@ -1807,15 +1804,12 @@ function App() {
                               Добровольное информированное согласие на участие в исследовании.{' '}
                               <a
                                 href="/research-consent.html"
-                                target="_blank"
-                                rel="noopener noreferrer"
                                 style={{
                                   color: 'var(--lilac)',
                                   fontWeight: 700,
                                   textDecoration: 'underline',
                                   textUnderlineOffset: '3px',
-                                }}
-                              >
+                                }} onClick={(e) => { e.preventDefault(); window.open('/research-consent.html', '_blank'); }}>
                                 Ознакомиться с документами
                               </a>.
                             </span>
