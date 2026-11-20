@@ -601,6 +601,17 @@ function App() {
     setShowRawJson(false)
     setScreen('screening')
   }
+  
+    function openSavedReportForChild(child) {
+    if (!child.lastResult) return
+
+    setActiveChild(child)
+    setLastResult(child.lastResult)
+    setTestStage('result')
+    setSelectedModeId(TEST_MODES[0].id)
+    setShowRawJson(false)
+    setScreen('screening')
+  }
 
   const activeMode =
     TEST_MODES.find((m) => m.id === selectedModeId) || TEST_MODES[0]
@@ -1685,22 +1696,33 @@ function App() {
                                 </div>
 
                                 <div className="child-actions">
-                                  <button
-                                    type="button"
-                                    className="btn-start-test"
-                                    onClick={() => openScreeningForChild(child)}
-                                  >
-                                    Начать скрининг →
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="btn-remove"
-                                    onClick={() => handleRemoveChild(child.id)}
-                                    disabled={deletingChildId === child.id}
-                                  >
-                                    {deletingChildId === child.id ? 'Удаляем…' : 'Удалить'}
-                                  </button>
-                                </div>
+  {child.lastResult && (
+    <button
+      type="button"
+      className="btn-start-test"
+      onClick={() => openSavedReportForChild(child)}
+    >
+      Посмотреть отчёт →
+    </button>
+  )}
+
+  <button
+    type="button"
+    className="btn-start-test"
+    onClick={() => openScreeningForChild(child)}
+  >
+    {child.lastResult ? 'Пройти ещё раз →' : 'Начать скрининг →'}
+  </button>
+
+  <button
+    type="button"
+    className="btn-remove"
+    onClick={() => handleRemoveChild(child.id)}
+    disabled={deletingChildId === child.id}
+  >
+    {deletingChildId === child.id ? 'Удаляем…' : 'Удалить'}
+  </button>
+</div>
                               </article>
                             )
                           })}
