@@ -259,6 +259,7 @@ function App() {
   const [showPassword, setShowPassword] = useState(false)
   const [status, setStatus] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [deletingChildId, setDeletingChildId] = useState(null)
 
   // Данные кабинета (ChildOut)
   const [childrenList, setChildrenList] = useState(loadSavedChildren)
@@ -534,8 +535,46 @@ function App() {
     }
   }
 
-  function handleRemoveChild(childId) {
-    persistChildren(childrenList.filter((c) => c.id !== childId))
+  async function handleRemoveChild(childId) {
+    setStatus(null)
+    setDeletingChildId(childId)
+
+    try {
+      const response = await fetch(`${API_BASE}/api/children/${childId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (response.status === 401) {
+        setStatus({
+          type: 'error',
+          text: 'Сессия истекла. Выйдите и войдите в аккаунт заново.',
+        })
+        return
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        setStatus({
+          type: 'error',
+          text:
+            typeof errorData.detail === 'string'
+              ? `Не удалось удалить профиль: ${errorData.detail}`
+              : `Не удалось удалить профиль (HTTP ${response.status}).`,
+        })
+        return
+      }
+
+      persistChildren(childrenList.filter((c) => c.id !== childId))
+      setStatus({ type: 'success', text: 'Профиль ребёнка удалён.' })
+    } catch {
+      setStatus({
+        type: 'error',
+        text: 'Не удалось связаться с сервером. Профиль не удалён.',
+      })
+    } finally {
+      setDeletingChildId(null)
+    }
   }
 
   function openScreeningForChild(child) {
@@ -1622,8 +1661,9 @@ function App() {
                                     type="button"
                                     className="btn-remove"
                                     onClick={() => handleRemoveChild(child.id)}
+                                    disabled={deletingChildId === child.id}
                                   >
-                                    Удалить
+                                    {deletingChildId === child.id ? 'Удаляем…' : 'Удалить'}
                                   </button>
                                 </div>
                               </article>

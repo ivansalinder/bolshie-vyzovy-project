@@ -81,6 +81,28 @@ def list_children(
     return db.query(models.Child).filter(models.Child.guardian_id == current_user.id).all()
 
 
+@app.delete("/api/children/{child_id}", status_code=204)
+def delete_child(
+    child_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    child = (
+        db.query(models.Child)
+        .filter(
+            models.Child.id == child_id,
+            models.Child.guardian_id == current_user.id,
+        )
+        .first()
+    )
+    if not child:
+        raise HTTPException(status_code=404, detail="Профиль ребёнка не найден")
+
+    # Связанные результаты скрининга удаляются через cascade в модели Child.
+    db.delete(child)
+    db.commit()
+
+
 @app.post(
     "/api/screenings",
     response_model=Union[schemas.ScreeningSpecialistOut, schemas.ScreeningParentOut],
