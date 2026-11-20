@@ -1403,11 +1403,9 @@ function App() {
                           required
                         />
                         <span>
-                          Подтверждаю согласие на обработку персональных данных для
-                          регистрации и использования сервиса. Документы пока готовятся.
-                          {' '}
+                          Нажимая кнопку «Отправить», я подтверждаю{' '}
                           <a
-                            href="/documents.html"
+                            href="/personal-data-consent.html"
                             target="_blank"
                             rel="noopener noreferrer"
                             style={{
@@ -1417,8 +1415,9 @@ function App() {
                               textUnderlineOffset: '3px',
                             }}
                           >
-                            Информация о документах
-                          </a>
+                            согласие на обработку моих персональных данных
+                          </a>.
+
                         </span>
                       </label>
                     </div>
@@ -1805,13 +1804,9 @@ function App() {
                               onChange={(e) => setConsentAccepted(e.target.checked)}
                             />
                             <span>
-                              <strong>
-                                Подтверждаю согласие на обработку персональных данных
-                              </strong>{' '}
-                              (152-ФЗ). Результаты сохраняются в обезличенном виде под
-                              кодом {formatChildCode(activeChild.id)}.{' '}
+                              Добровольное информированное согласие на участие в исследовании.{' '}
                               <a
-                                href="/documents.html"
+                                href="/research-consent.html"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 style={{
