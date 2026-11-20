@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 
 const API_BASE = 'http://127.0.0.1:8000'
@@ -254,6 +254,9 @@ function App() {
     localStorage.getItem('token') ? 'cabinet' : 'intro'
   )
 
+  const initialScreenRef = useRef(screen)
+  const historyInitializedRef = useRef(false)
+
   const [previewRole, setPreviewRole] = useState('parent')
   const [role, setRole] = useState(null)
   const [showPassword, setShowPassword] = useState(false)
@@ -277,6 +280,63 @@ function App() {
   const [lastResult, setLastResult] = useState(null)
   const reportView = userRole === 'specialist' ? 'specialist' : 'parent'
   const [showRawJson, setShowRawJson] = useState(false)
+  useEffect(() => {
+  if (!historyInitializedRef.current) {
+    historyInitializedRef.current = true
+
+    const rootEntry = {
+      __readcheck: true,
+      screen: initialScreenRef.current,
+      root: true,
+      guard: false,
+    }
+
+    // Начальная запись истории приложения
+    window.history.replaceState(
+      rootEntry,
+      '',
+      window.location.href
+    )
+
+    // Защитная запись, чтобы не покинуть приложение
+    // при нажатии «Назад» на начальном экране
+    window.history.pushState(
+      { ...rootEntry, guard: true },
+      '',
+      window.location.href
+    )
+  }
+
+  function handlePopState(event) {
+    const entry = event.state
+
+    if (!entry?.__readcheck || !entry.screen) return
+
+    setScreen(entry.screen)
+    setStatus(null)
+    setShowPassword(false)
+
+    if (entry.screen === 'register') {
+      setRole(null)
+    }
+
+    // Не позволяем случайно выйти из ReadCheck
+    // при достижении начального экрана
+    if (entry.root && !entry.guard) {
+      window.history.pushState(
+        { ...entry, guard: true },
+        '',
+        window.location.href
+      )
+    }
+  }
+
+  window.addEventListener('popstate', handlePopState)
+
+  return () => {
+    window.removeEventListener('popstate', handlePopState)
+  }
+}, [])
 
   useEffect(() => {
     if (screen !== 'screening' || testStage !== 'testing') return
@@ -329,14 +389,38 @@ function App() {
     localStorage.setItem(CHILDREN_STORAGE_KEY, JSON.stringify(nextList))
   }
 
-  function goToScreen(nextScreen) {
-    setScreen(nextScreen)
-    setStatus(null)
-    setShowPassword(false)
-    if (nextScreen === 'register') {
-      setRole(null)
+  function goToScreen(nextScreen, replaceHistory = false) {
+  if (nextScreen !== screen) {
+    const historyEntry = {
+      __readcheck: true,
+      screen: nextScreen,
+      root: false,
+      guard: false,
+    }
+
+    if (replaceHistory) {
+      window.history.replaceState(
+        historyEntry,
+        '',
+        window.location.href
+      )
+    } else {
+      window.history.pushState(
+        historyEntry,
+        '',
+        window.location.href
+      )
     }
   }
+
+  setScreen(nextScreen)
+  setStatus(null)
+  setShowPassword(false)
+
+  if (nextScreen === 'register') {
+    setRole(null)
+  }
+}
 
   function handleSelectRole(chosenRole) {
     setRole(chosenRole)
@@ -386,7 +470,7 @@ function App() {
       if (response.ok) {
         localStorage.setItem('userRole', role)
         setUserRole(role)
-        setScreen('login')
+        goToScreen('login')
         setShowPassword(false)
         setStatus({
           type: 'success',
@@ -447,7 +531,7 @@ function App() {
         localStorage.setItem('userEmail', emailValue)
         setToken(data.access_token)
         setUserEmail(emailValue)
-        setScreen('cabinet')
+        goToScreen('cabinet', true)
         setStatus(null)
       } else {
         const errorData = await response.json()
@@ -599,7 +683,7 @@ function App() {
     setItemTimings({})
     setLastResult(null)
     setShowRawJson(false)
-    setScreen('screening')
+    goToScreen('screening')
   }
 
     function openSavedReportForChild(child) {
@@ -610,7 +694,7 @@ function App() {
     setTestStage('result')
     setSelectedModeId(TEST_MODES[0].id)
     setShowRawJson(false)
-    setScreen('screening')
+    goToScreen('screening')
   }
 
   const activeMode =
@@ -1416,16 +1500,18 @@ function App() {
                         <span>
                           Нажимая кнопку «Зарегистрироваться», я подтверждаю{' '}
                           <a
-                            href="/personal-data-consent.html"
-                            style={{
-                              color: 'var(--lilac)',
-                              fontWeight: 700,
-                              textDecoration: 'underline',
-                              textUnderlineOffset: '3px',
-                            }} onClick={(e) => { e.preventDefault(); window.open('/personal-data-consent.html', '_blank'); }}>
-                            согласие на обработку моих персональных данных
-                          </a>.
-
+                          href="/personal-data-consent.html"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: 'var(--lilac)',
+                            fontWeight: 700,
+                            textDecoration: 'underline',
+                            textUnderlineOffset: '3px',
+                            }}
+                            >
+                              согласие на обработку моих персональных данных
+                              </a>.
                         </span>
                       </label>
                     </div>
@@ -1827,15 +1913,18 @@ function App() {
                             <span>
                               Добровольное информированное согласие на участие в исследовании.{' '}
                               <a
-                                href="/research-consent.html"
-                                style={{
-                                  color: 'var(--lilac)',
-                                  fontWeight: 700,
-                                  textDecoration: 'underline',
-                                  textUnderlineOffset: '3px',
-                                }} onClick={(e) => { e.preventDefault(); window.open('/research-consent.html', '_blank'); }}>
-                                Ознакомиться с документами
-                              </a>.
+                              href="/research-consent.html"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                color: 'var(--lilac)',
+                                fontWeight: 700,
+                                textDecoration: 'underline',
+                                textUnderlineOffset: '3px',
+                                }}
+                                >
+                                  Ознакомиться с документами
+                                  </a>
                             </span>
                           </label>
                         </div>
