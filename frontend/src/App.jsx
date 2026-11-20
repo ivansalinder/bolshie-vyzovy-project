@@ -1384,6 +1384,35 @@ function App() {
                       )}
                     </div>
 
+                    <div className="consent-row">
+                      <label className="consent-label">
+                        <input
+                          type="checkbox"
+                          name="personal_data_consent"
+                          value="accepted"
+                          required
+                        />
+                        <span>
+                          Подтверждаю согласие на обработку персональных данных для
+                          регистрации и использования сервиса. Документы пока готовятся.
+                          {' '}
+                          <a
+                            href="/documents.html"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              color: 'var(--lilac)',
+                              fontWeight: 700,
+                              textDecoration: 'underline',
+                              textUnderlineOffset: '3px',
+                            }}
+                          >
+                            Информация о документах
+                          </a>
+                        </span>
+                      </label>
+                    </div>
+
                     <button
                       className={
                         role === 'specialist'
@@ -1770,7 +1799,20 @@ function App() {
                                 Подтверждаю согласие на обработку персональных данных
                               </strong>{' '}
                               (152-ФЗ). Результаты сохраняются в обезличенном виде под
-                              кодом {formatChildCode(activeChild.id)}.
+                              кодом {formatChildCode(activeChild.id)}.{' '}
+                              <a
+                                href="/documents.html"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  color: 'var(--lilac)',
+                                  fontWeight: 700,
+                                  textDecoration: 'underline',
+                                  textUnderlineOffset: '3px',
+                                }}
+                              >
+                                Ознакомиться с документами
+                              </a>.
                             </span>
                           </label>
                         </div>
