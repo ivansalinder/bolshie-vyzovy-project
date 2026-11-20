@@ -601,7 +601,7 @@ function App() {
     setShowRawJson(false)
     setScreen('screening')
   }
-  
+
     function openSavedReportForChild(child) {
     if (!child.lastResult) return
 
@@ -1414,7 +1414,7 @@ function App() {
                           required
                         />
                         <span>
-                          Нажимая кнопку «Отправить», я подтверждаю{' '}
+                          Нажимая кнопку «Зарегистрироваться», я подтверждаю{' '}
                           <a
                             href="/personal-data-consent.html"
                             style={{
@@ -1706,13 +1706,15 @@ function App() {
     </button>
   )}
 
+  {!child.lastResult && (
   <button
     type="button"
     className="btn-start-test"
     onClick={() => openScreeningForChild(child)}
   >
-    {child.lastResult ? 'Пройти ещё раз →' : 'Начать скрининг →'}
+    Начать скрининг →
   </button>
+)}
 
   <button
     type="button"
@@ -2112,20 +2114,13 @@ function App() {
 
                           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                             <button
-                              type="button"
-                              className="btn-secondary"
-                              onClick={() => openScreeningForChild(activeChild)}
-                            >
-                              Пройти ещё раз
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-primary"
-                              onClick={() => goToScreen('cabinet')}
+                            type="button"
+                            className="btn-primary"
+                            onClick={() => goToScreen('cabinet')}
                             >
                               В кабинет
-                            </button>
-                          </div>
+                              </button>
+                              </div>
                         </div>
 
                         {showRawJson && reportView === 'specialist' && (
