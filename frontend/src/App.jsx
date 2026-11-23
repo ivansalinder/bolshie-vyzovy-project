@@ -124,22 +124,14 @@ function App() {
   const [selectedModeId, setSelectedModeId] = useState(TEST_MODES[0].id)
   const [consentAccepted, setConsentAccepted] = useState(false)
   const [testStage, setTestStage] = useState('ready') // 'ready' | 'testing' | 'result'
-  const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [currentItemIdx, setCurrentItemIdx] = useState(0)
-  const [itemStartTime, setItemStartTime] = useState(null)
+  const [itemPhase, setItemPhase] = useState('reading') // 'reading' | 'answering'
+  const [phaseStartTime, setPhaseStartTime] = useState(null)
   const [answers, setAnswers] = useState({}) // { [itemId]: optionIdx }
-  const [itemTimings, setItemTimings] = useState({}) // { [itemId]: seconds }
+  // { [itemId]: { readingTimeSec: number, answerTimeSec: number } }
+  const [itemTimings, setItemTimings] = useState({})
   const [lastResult, setLastResult] = useState(null)
   const reportView = userRole === 'specialist' ? 'specialist' : 'parent'
-  const [showRawJson, setShowRawJson] = useState(false)
-
-  useEffect(() => {
-    if (screen !== 'screening' || testStage !== 'testing') return
-    const intervalId = setInterval(() => {
-      setElapsedSeconds((prev) => prev + 1)
-    }, 1000)
-    return () => clearInterval(intervalId)
-  }, [screen, testStage])
 
   useEffect(() => {
     if (!token) return
@@ -448,12 +440,12 @@ function App() {
     setSelectedModeId(TEST_MODES[0].id)
     setConsentAccepted(false)
     setTestStage('ready')
-    setElapsedSeconds(0)
     setCurrentItemIdx(0)
+    setItemPhase('reading')
+    setPhaseStartTime(null)
     setAnswers({})
     setItemTimings({})
     setLastResult(null)
-    setShowRawJson(false)
     setScreen('screening')
   }
 
@@ -464,7 +456,6 @@ function App() {
     setLastResult(child.lastResult)
     setTestStage('result')
     setSelectedModeId(TEST_MODES[0].id)
-    setShowRawJson(false)
     setScreen('screening')
   }
 
@@ -476,35 +467,47 @@ function App() {
 
   function startTesting() {
     if (!consentAccepted) return
-    setElapsedSeconds(0)
     setCurrentItemIdx(0)
+    setItemPhase('reading')
     setAnswers({})
     setItemTimings({})
-    setItemStartTime(Date.now())
+    setPhaseStartTime(Date.now())
     setTestStage('testing')
   }
 
-  function recordCurrentItemTime() {
-    if (!currentItem || !itemStartTime) return itemTimings
-    const spentSec = Number(((Date.now() - itemStartTime) / 1000).toFixed(1))
+  // Отдельно фиксируем время чтения предложения и время ответа на вопрос.
+  function recordCurrentPhaseTime() {
+    if (!currentItem || !phaseStartTime) return itemTimings
+
+    const spentSec = Number(((Date.now() - phaseStartTime) / 1000).toFixed(1))
+    const timingKey = itemPhase === 'reading' ? 'readingTimeSec' : 'answerTimeSec'
+    const currentTiming = itemTimings[currentItem.id] || {
+      readingTimeSec: 0,
+      answerTimeSec: 0,
+    }
     const nextTimings = {
       ...itemTimings,
-      [currentItem.id]: Number(((itemTimings[currentItem.id] || 0) + spentSec).toFixed(1)),
+      [currentItem.id]: {
+        ...currentTiming,
+        [timingKey]: Number(((currentTiming[timingKey] || 0) + spentSec).toFixed(1)),
+      },
     }
+
     setItemTimings(nextTimings)
     return nextTimings
   }
 
-  function handleNextItem() {
-    recordCurrentItemTime()
-    setCurrentItemIdx((prev) => prev + 1)
-    setItemStartTime(Date.now())
+  function handleShowQuestions() {
+    recordCurrentPhaseTime()
+    setItemPhase('answering')
+    setPhaseStartTime(Date.now())
   }
 
-  function handlePrevItem() {
-    recordCurrentItemTime()
-    setCurrentItemIdx((prev) => prev - 1)
-    setItemStartTime(Date.now())
+  function handleNextItem() {
+    recordCurrentPhaseTime()
+    setCurrentItemIdx((prev) => prev + 1)
+    setItemPhase('reading')
+    setPhaseStartTime(Date.now())
   }
 
   function selectAnswer(itemId, optionIdx) {
@@ -512,14 +515,17 @@ function App() {
   }
 
   async function finishScreening() {
-    const finalTimings = recordCurrentItemTime()
+    const finalTimings = recordCurrentPhaseTime()
     const totalQuestions = activeItems.length
 
-    // Считаем точное время, количество слов и разбор по каждому заданию
+    // Сохраняем время чтения предложения и время ответа отдельно для каждого задания.
     const itemLog = activeItems.map((item) => {
       const chosenIdx = answers[item.id]
       const isCorrect = chosenIdx === item.correctIndex
-      const timeSec = finalTimings[item.id] || 1.0
+      const timing = finalTimings[item.id] || {}
+      const readingTimeSec = Number((timing.readingTimeSec || 0).toFixed(1))
+      const answerTimeSec = Number((timing.answerTimeSec || 0).toFixed(1))
+      const timeSec = Number((readingTimeSec + answerTimeSec).toFixed(1))
       return {
         id: item.id,
         component: item.component,
@@ -528,6 +534,8 @@ function App() {
         chosenText: chosenIdx !== undefined ? item.options[chosenIdx] : '—',
         correctText: item.options[item.correctIndex],
         isCorrect,
+        readingTimeSec,
+        answerTimeSec,
         timeSec,
       }
     })
@@ -536,15 +544,21 @@ function App() {
       (sum, item) => sum + item.sentence.split(/\s+/).filter(Boolean).length,
       0
     )
-    const summedSec = itemLog.reduce((sum, row) => sum + row.timeSec, 0)
-    const durationSec = Math.max(Math.round(summedSec), elapsedSeconds, 1)
+    const readingDurationSec = Number(
+      itemLog.reduce((sum, row) => sum + row.readingTimeSec, 0).toFixed(1)
+    )
+    const answeringDurationSec = Number(
+      itemLog.reduce((sum, row) => sum + row.answerTimeSec, 0).toFixed(1)
+    )
+    const durationSec = Math.max(Math.round(readingDurationSec + answeringDurationSec), 1)
 
     const correctAnswers = itemLog.filter((r) => r.isCorrect).length
     const errorsCount = totalQuestions - correctAnswers
     const comprehensionPct = Math.round((correctAnswers / totalQuestions) * 100)
     const errorRate = Number(((errorsCount / totalQuestions) * 100).toFixed(1))
     const avgTimeSec = Number((durationSec / totalQuestions).toFixed(1))
-    const netWpm = Math.max(1, Math.round((totalWords / durationSec) * 60))
+    // Темп чтения рассчитывается только по времени, в течение которого читалось предложение.
+    const netWpm = Math.max(1, Math.round((totalWords / Math.max(readingDurationSec, 1)) * 60))
 
     // Группировка по 5 методическим компонентам
     const componentOrder = ['Орфография', 'Фонология', 'Семантика', 'Морфология', 'Синтаксис']
@@ -594,6 +608,9 @@ function App() {
       consent_152fz: true,
       mode_id: activeMode.id,
       avg_time_per_item_sec: avgTimeSec,
+      reading_time_seconds: readingDurationSec,
+      answer_time_seconds: answeringDurationSec,
+      total_time_seconds: durationSec,
       component_stats: componentStats,
       items: itemLog,
     }
@@ -601,7 +618,8 @@ function App() {
     const submitPayload = {
       child_id: Number(activeChild.id),
       word_Count: totalWords,
-      reading_time_seconds: Number(durationSec),
+      // API использует это поле для расчёта темпа чтения.
+      reading_time_seconds: Number(readingDurationSec),
       correct_answers: correctAnswers,
       total_questions: totalQuestions,
       errors_made: errorsCount,
@@ -639,6 +657,8 @@ function App() {
       completedAt: serverData?.created_at || new Date().toISOString(),
       savedToApi,
       durationSec,
+      readingDurationSec,
+      answeringDurationSec,
       avgTimeSec,
       totalWords,
       errorsCount,
@@ -1725,11 +1745,6 @@ function App() {
                             Задание {currentItemIdx + 1} из {activeItems.length} ·{' '}
                             {currentItem.component}
                           </span>
-
-                          <div className="timer-box" aria-live="polite">
-                            <span className="timer-dot" />
-                            {formatTime(elapsedSeconds)}
-                          </div>
                         </div>
 
                         <div className="stimulus-sheet">
@@ -1738,63 +1753,71 @@ function App() {
                           )}
                         </div>
 
-                        <p className="question-prompt">{currentItem.question}</p>
-
-                        <div className="options-stack">
-                          {currentItem.options.map((optionText, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              className={
-                                currentAnswer === idx
-                                  ? 'option-btn selected'
-                                  : 'option-btn'
-                              }
-                              onClick={() => selectAnswer(currentItem.id, idx)}
-                            >
-                              <span className="option-letter">
-                                {['А', 'Б', 'В'][idx]}
-                              </span>
-                              <span>{optionText}</span>
-                            </button>
-                          ))}
-                        </div>
-
-                        <div className="reading-footer" style={{ marginTop: '26px' }}>
-                          {currentItemIdx > 0 ? (
-                            <button
-                              type="button"
-                              className="btn-secondary"
-                              onClick={handlePrevItem}
-                            >
-                              ← Назад
-                            </button>
-                          ) : (
-                            <span />
-                          )}
-
-                          {currentItemIdx < activeItems.length - 1 ? (
+                        {itemPhase === 'reading' ? (
+                          <div
+                            className="reading-footer"
+                            style={{ marginTop: '26px', justifyContent: 'flex-end' }}
+                          >
                             <button
                               type="button"
                               className="btn-primary lilac"
-                              disabled={currentAnswer === undefined}
-                              onClick={handleNextItem}
+                              onClick={handleShowQuestions}
                             >
-                              Следующее задание →
+                              Перейти к вопросам →
                             </button>
-                          ) : (
-                            <button
-                              type="button"
-                              className="btn-primary"
-                              disabled={currentAnswer === undefined || isSubmitting}
-                              onClick={finishScreening}
+                          </div>
+                        ) : (
+                          <>
+                            <p className="question-prompt">{currentItem.question}</p>
+
+                            <div className="options-stack">
+                              {currentItem.options.map((optionText, idx) => (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  className={
+                                    currentAnswer === idx
+                                      ? 'option-btn selected'
+                                      : 'option-btn'
+                                  }
+                                  onClick={() => selectAnswer(currentItem.id, idx)}
+                                >
+                                  <span className="option-letter">
+                                    {['А', 'Б', 'В'][idx]}
+                                  </span>
+                                  <span>{optionText}</span>
+                                </button>
+                              ))}
+                            </div>
+
+                            <div
+                              className="reading-footer"
+                              style={{ marginTop: '26px', justifyContent: 'flex-end' }}
                             >
-                              {isSubmitting
-                                ? 'Сохраняем результат…'
-                                : 'Завершить и получить отчёт'}
-                            </button>
-                          )}
-                        </div>
+                              {currentItemIdx < activeItems.length - 1 ? (
+                                <button
+                                  type="button"
+                                  className="btn-primary lilac"
+                                  disabled={currentAnswer === undefined}
+                                  onClick={handleNextItem}
+                                >
+                                  Следующее задание →
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="btn-primary"
+                                  disabled={currentAnswer === undefined || isSubmitting}
+                                  onClick={finishScreening}
+                                >
+                                  {isSubmitting
+                                    ? 'Сохраняем результат…'
+                                    : 'Завершить и получить отчёт'}
+                                </button>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </>
                     )}
 
@@ -1826,19 +1849,27 @@ function App() {
                         {/* Ключевые метрики */}
                         <div className="result-grid">
                           <div className="result-metric">
-                            <span>Общая точность</span>
+                            <span>Кол-во правильных ответов</span>
                             <strong>
                               {lastResult.correctAnswers}/{lastResult.totalQuestions} (
                               {lastResult.comprehensionPct}%)
                             </strong>
                           </div>
                           <div className="result-metric">
-                            <span>Общее время</span>
-                            <strong>{formatTime(lastResult.durationSec)}</strong>
+                            <span>Общее время ответов</span>
+                            <strong>
+                              {lastResult.answeringDurationSec != null
+                                ? formatTime(Math.round(lastResult.answeringDurationSec))
+                                : 'Нет данных'}
+                            </strong>
                           </div>
                           <div className="result-metric">
-                            <span>Ср. время / задание</span>
-                            <strong>{lastResult.avgTimeSec} сек</strong>
+                            <span>Общее время, потраченное на чтение</span>
+                            <strong>
+                              {lastResult.readingDurationSec != null
+                                ? formatTime(Math.round(lastResult.readingDurationSec))
+                                : 'Нет данных'}
+                            </strong>
                           </div>
                           <div className="result-metric">
                             <span>Темп чтения</span>
@@ -1925,7 +1956,9 @@ function App() {
                                   <th>Предложение</th>
                                   <th>Ответ ребёнка</th>
                                   <th>Эталон</th>
-                                  <th>Время</th>
+                                  <th>Чтение</th>
+                                  <th>Ответы</th>
+                                  <th>Всего</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -1938,7 +1971,17 @@ function App() {
                                       {row.chosenText} {row.isCorrect ? '✓' : '✗'}
                                     </td>
                                     <td>{row.correctText}</td>
-                                    <td>{row.timeSec} с</td>
+                                    <td>
+                                      {row.readingTimeSec != null
+                                        ? `${row.readingTimeSec.toFixed(1)} с`
+                                        : '—'}
+                                    </td>
+                                    <td>
+                                      {row.answerTimeSec != null
+                                        ? `${row.answerTimeSec.toFixed(1)} с`
+                                        : '—'}
+                                    </td>
+                                    <td>{row.timeSec != null ? `${row.timeSec.toFixed(1)} с` : '—'}</td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -1960,15 +2003,6 @@ function App() {
                               Скачать отчёт в PDF
                             </button>
 
-                            {reportView === 'specialist' && (
-                              <button
-                                type="button"
-                                className="btn-secondary"
-                                onClick={() => setShowRawJson((prev) => !prev)}
-                              >
-                                {showRawJson ? 'Скрыть JSON' : 'Показать JSON'}
-                              </button>
-                            )}
                           </div>
 
                           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
@@ -1982,11 +2016,6 @@ function App() {
                               </div>
                         </div>
 
-                        {showRawJson && reportView === 'specialist' && (
-                          <pre className="json-preview no-print">
-                            {JSON.stringify(lastResult.rawData, null, 2)}
-                          </pre>
-                        )}
                       </>
                     )}
                   </div>
