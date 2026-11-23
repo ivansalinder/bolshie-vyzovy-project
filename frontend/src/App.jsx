@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import './App.css'
+import { TEST_MODES } from './stimuli'
 
-const API_BASE = 'http://127.0.0.1:8000'
+const API_BASE = import.meta.env.DEV ? 'http://127.0.0.1:8000' : ''
 const SCREENING_ENDPOINT = `${API_BASE}/api/screenings`
 const CHILDREN_STORAGE_KEY = 'readcheck_children_v1'
 
@@ -20,164 +21,18 @@ const PACE_BARS = [
   { h: 52, type: 'ok' },
 ]
 
-/* =====================================================================
- * ПЕРВИЧНЫЕ СТИМУЛЫ ОТ МЕТОДИЧЕСКОГО ОТДЕЛА («Стимулы — Предложения»)
- * 5 компонентов: Орфография, Фонология, Семантика, Морфология, Синтаксис
- * ===================================================================== */
-const SENTENCE_STIMULI = [
-  // 1. Орфография
-  {
-    id: 'ort-1',
-    component: 'Орфография',
-    sentence: 'Со стола СОБРАЛ соломинки.',
-    question: 'Выбери сочетание букв, которое повторяется в предложении:',
-    options: ['Со', 'Ос', 'Ур'],
-    correctIndex: 0,
-  },
-  {
-    id: 'ort-2',
-    component: 'Орфография',
-    sentence: 'На парте лежала карта и марка.',
-    question: 'Выбери сочетание букв, которое повторяется в предложении:',
-    options: ['ар', 'ра', 'лом'],
-    correctIndex: 0,
-  },
-  {
-    id: 'ort-3',
-    component: 'Орфография',
-    sentence: 'В баках росли маки и ползали раки.',
-    question: 'Выбери сочетание букв, которое повторяется в предложении:',
-    options: ['ро', 'ка', 'ак'],
-    correctIndex: 2,
-  },
-
-  // 2. Фонология
-  {
-    id: 'fon-1',
-    component: 'Фонология',
-    sentence: 'Этот ... очень быстрый.',
-    question: 'Выбери наиболее подходящее по смыслу слово:',
-    options: ['Конь', 'Кон', 'Стул'],
-    correctIndex: 0,
-  },
-  {
-    id: 'fon-2',
-    component: 'Фонология',
-    sentence: '... медленно плыл по реке.',
-    question: 'Выбери наиболее подходящее по смыслу слово:',
-    options: ['Плоть', 'Плот', 'Пол'],
-    correctIndex: 1,
-  },
-  {
-    id: 'fon-3',
-    component: 'Фонология',
-    sentence: 'Я был очень ... нашей встрече.',
-    question: 'Выбери наиболее подходящее по смыслу слово:',
-    options: ['Ряд', 'Рад', 'Род'],
-    correctIndex: 1,
-  },
-
-  // 3. Семантика
-  {
-    id: 'sem-1',
-    component: 'Семантика',
-    sentence: 'Старый пёс спал у ворот.',
-    question: 'Кто спал у ворот?',
-    options: ['Забор', 'Собака', 'Кошка'],
-    correctIndex: 1,
-  },
-  {
-    id: 'sem-2',
-    component: 'Семантика',
-    sentence: 'На поляне стояла берёза.',
-    question: 'Что стояло на поляне?',
-    options: ['Пень', 'Дерево', 'Кувшин'],
-    correctIndex: 1,
-  },
-  {
-    id: 'sem-3',
-    component: 'Семантика',
-    sentence: 'Врач осмотрел мальчика.',
-    question: 'Кто осмотрел мальчика?',
-    options: ['Учитель', 'Доктор', 'Больной'],
-    correctIndex: 1,
-  },
-
-  // 4. Морфология
-  {
-    id: 'mor-1',
-    component: 'Морфология',
-    sentence: 'Мой папа работает лесорубом.',
-    question: 'Чем занимается мой папа?',
-    options: ['Пилит деревья', 'Ломает ветки', 'Оформляет документы'],
-    correctIndex: 0,
-  },
-  {
-    id: 'mor-2',
-    component: 'Морфология',
-    sentence: 'Наш дедушка — настоящий книголюб.',
-    question: 'Что делает дедушка?',
-    options: ['Обожает мороженое', 'Продаёт ручки и тетради', 'Много читает'],
-    correctIndex: 2,
-  },
-  {
-    id: 'mor-3',
-    component: 'Морфология',
-    sentence: 'Осенью в парке начался листопад.',
-    question: 'Что происходило в парке?',
-    options: ['Падали листья', 'Дул ветер', 'Шёл снег'],
-    correctIndex: 0,
-  },
-
-  // 5. Синтаксис
-  {
-    id: 'syn-1',
-    component: 'Синтаксис',
-    sentence: 'Книги, которые подарила мне бабушка на день рождения, ... на полке.',
-    question: 'Заполни пропуск подходящим словом:',
-    options: ['Лежит', 'Лежат', 'Лежала'],
-    correctIndex: 1,
-  },
-  {
-    id: 'syn-2',
-    component: 'Синтаксис',
-    sentence: 'Мальчик, который вместе с друзьями участвовал в соревнованиях, ... первое место.',
-    question: 'Заполни пропуск подходящим словом:',
-    options: ['Заняли', 'Занял', 'Заняла'],
-    correctIndex: 1,
-  },
-  {
-    id: 'syn-3',
-    component: 'Синтаксис',
-    sentence: 'Дерево, которое посадили школьники, ... возле школы.',
-    question: 'Заполни пропуск подходящим словом:',
-    options: ['Выросли', 'Выросло', 'Вырос'],
-    correctIndex: 1,
-  },
-]
-
-const TEST_MODES = [
-  {
-    id: 'full-15',
-    title: 'Полный скрининг предложений',
-    levelLabel: 'Методика · 5 компонентов',
-    description: '15 заданий · по 3 на каждый компонент',
-    items: SENTENCE_STIMULI,
-  },
-  {
-    id: 'express-5',
-    title: 'Экспресс-демо (для проверки)',
-    levelLabel: 'Быстрый режим · 5 компонентов',
-    description: '5 заданий · по 1 на каждый компонент',
-    items: [
-      SENTENCE_STIMULI[0],
-      SENTENCE_STIMULI[3],
-      SENTENCE_STIMULI[6],
-      SENTENCE_STIMULI[9],
-      SENTENCE_STIMULI[12],
-    ],
-  },
-]
+function renderFormattedSentence(text) {
+  if (!text) return null
+  return text.split(/(\*\*.*?\*\*)/g).map((part, idx) =>
+    part.startsWith('**') && part.endsWith('**') ? (
+      <strong key={idx} className="stimulus-bold">
+        {part.slice(2, -2)}
+      </strong>
+    ) : (
+      <span key={idx}>{part}</span>
+    )
+  )
+}
 
 const COMPONENT_ADVICE = {
   Орфография: 'Полезны короткие игры на поиск одинаковых слогов и буквосочетаний в словах.',
@@ -259,6 +114,7 @@ function App() {
   const [showPassword, setShowPassword] = useState(false)
   const [status, setStatus] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [deletingChildId, setDeletingChildId] = useState(null)
 
   // Данные кабинета (ChildOut)
   const [childrenList, setChildrenList] = useState(loadSavedChildren)
@@ -274,7 +130,7 @@ function App() {
   const [answers, setAnswers] = useState({}) // { [itemId]: optionIdx }
   const [itemTimings, setItemTimings] = useState({}) // { [itemId]: seconds }
   const [lastResult, setLastResult] = useState(null)
-  const [reportView, setReportView] = useState('parent') // 'parent' | 'specialist'
+  const reportView = userRole === 'specialist' ? 'specialist' : 'parent'
   const [showRawJson, setShowRawJson] = useState(false)
 
   useEffect(() => {
@@ -307,7 +163,7 @@ function App() {
             birth_date: item.birth_date,
             grade: item.grade || '',
             notes: item.notes || '',
-            lastResult: prevById.get(item.id)?.lastResult || null,
+            lastResult: item.last_screening || prevById.get(item.id)?.lastResult || null,
           }))
           localStorage.setItem(CHILDREN_STORAGE_KEY, JSON.stringify(merged))
           return merged
@@ -431,6 +287,17 @@ function App() {
 
       if (response.ok) {
         const data = await response.json()
+        const profileResponse = await fetch(`${API_BASE}/api/users/me`, {
+          headers: { Authorization: `Bearer ${data.access_token}` },
+        })
+        if (!profileResponse.ok) {
+          throw new Error('Не удалось определить роль аккаунта.')
+        }
+        const profile = await profileResponse.json()
+        const authenticatedRole =
+          profile.role === 'specialist' ? 'specialist' : 'parent'
+        localStorage.setItem('userRole', authenticatedRole)
+        setUserRole(authenticatedRole)
         localStorage.setItem('token', data.access_token)
         localStorage.setItem('userEmail', emailValue)
         setToken(data.access_token)
@@ -534,8 +401,46 @@ function App() {
     }
   }
 
-  function handleRemoveChild(childId) {
-    persistChildren(childrenList.filter((c) => c.id !== childId))
+  async function handleRemoveChild(childId) {
+    setStatus(null)
+    setDeletingChildId(childId)
+
+    try {
+      const response = await fetch(`${API_BASE}/api/children/${childId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (response.status === 401) {
+        setStatus({
+          type: 'error',
+          text: 'Сессия истекла. Выйдите и войдите в аккаунт заново.',
+        })
+        return
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        setStatus({
+          type: 'error',
+          text:
+            typeof errorData.detail === 'string'
+              ? `Не удалось удалить профиль: ${errorData.detail}`
+              : `Не удалось удалить профиль (HTTP ${response.status}).`,
+        })
+        return
+      }
+
+      persistChildren(childrenList.filter((c) => c.id !== childId))
+      setStatus({ type: 'success', text: 'Профиль ребёнка удалён.' })
+    } catch {
+      setStatus({
+        type: 'error',
+        text: 'Не удалось связаться с сервером. Профиль не удалён.',
+      })
+    } finally {
+      setDeletingChildId(null)
+    }
   }
 
   function openScreeningForChild(child) {
@@ -548,7 +453,17 @@ function App() {
     setAnswers({})
     setItemTimings({})
     setLastResult(null)
-    setReportView(userRole === 'specialist' ? 'specialist' : 'parent')
+    setShowRawJson(false)
+    setScreen('screening')
+  }
+
+    function openSavedReportForChild(child) {
+    if (!child.lastResult) return
+
+    setActiveChild(child)
+    setLastResult(child.lastResult)
+    setTestStage('result')
+    setSelectedModeId(TEST_MODES[0].id)
     setShowRawJson(false)
     setScreen('screening')
   }
@@ -1345,6 +1260,31 @@ function App() {
                       )}
                     </div>
 
+                    <div className="consent-row">
+                      <label className="consent-label">
+                        <input
+                          type="checkbox"
+                          name="personal_data_consent"
+                          value="accepted"
+                          required
+                        />
+                        <span>
+                          Нажимая кнопку «Зарегистрироваться», я подтверждаю{' '}
+                          <a
+                            href="/personal-data-consent.html"
+                            style={{
+                              color: 'var(--lilac)',
+                              fontWeight: 700,
+                              textDecoration: 'underline',
+                              textUnderlineOffset: '3px',
+                            }} onClick={(e) => { e.preventDefault(); window.open('/personal-data-consent.html', '_blank'); }}>
+                            согласие на обработку моих персональных данных
+                          </a>.
+
+                        </span>
+                      </label>
+                    </div>
+
                     <button
                       className={
                         role === 'specialist'
@@ -1611,21 +1551,35 @@ function App() {
                                 </div>
 
                                 <div className="child-actions">
-                                  <button
-                                    type="button"
-                                    className="btn-start-test"
-                                    onClick={() => openScreeningForChild(child)}
-                                  >
-                                    Начать скрининг →
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="btn-remove"
-                                    onClick={() => handleRemoveChild(child.id)}
-                                  >
-                                    Удалить
-                                  </button>
-                                </div>
+  {child.lastResult && (
+    <button
+      type="button"
+      className="btn-start-test"
+      onClick={() => openSavedReportForChild(child)}
+    >
+      Посмотреть отчёт →
+    </button>
+  )}
+
+  {!child.lastResult && (
+  <button
+    type="button"
+    className="btn-start-test"
+    onClick={() => openScreeningForChild(child)}
+  >
+    Начать скрининг →
+  </button>
+)}
+
+  <button
+    type="button"
+    className="btn-remove"
+    onClick={() => handleRemoveChild(child.id)}
+    disabled={deletingChildId === child.id}
+  >
+    {deletingChildId === child.id ? 'Удаляем…' : 'Удалить'}
+  </button>
+</div>
                               </article>
                             )
                           })}
@@ -1726,11 +1680,17 @@ function App() {
                               onChange={(e) => setConsentAccepted(e.target.checked)}
                             />
                             <span>
-                              <strong>
-                                Подтверждаю согласие на обработку персональных данных
-                              </strong>{' '}
-                              (152-ФЗ). Результаты сохраняются в обезличенном виде под
-                              кодом {formatChildCode(activeChild.id)}.
+                              Добровольное информированное согласие на участие в исследовании.{' '}
+                              <a
+                                href="/research-consent.html"
+                                style={{
+                                  color: 'var(--lilac)',
+                                  fontWeight: 700,
+                                  textDecoration: 'underline',
+                                  textUnderlineOffset: '3px',
+                                }} onClick={(e) => { e.preventDefault(); window.open('/research-consent.html', '_blank'); }}>
+                                Ознакомиться с документами
+                              </a>.
                             </span>
                           </label>
                         </div>
@@ -1772,7 +1732,11 @@ function App() {
                           </div>
                         </div>
 
-                        <div className="stimulus-sheet">{currentItem.sentence}</div>
+                        <div className="stimulus-sheet">
+                          {renderFormattedSentence(
+                            currentItem.formattedSentence || currentItem.sentence
+                          )}
+                        </div>
 
                         <p className="question-prompt">{currentItem.question}</p>
 
@@ -1850,31 +1814,12 @@ function App() {
                             </div>
                           </div>
 
-                          <div className="mode-pills no-print" role="tablist">
-                            <button
-                              type="button"
-                              role="tab"
-                              aria-selected={reportView === 'parent'}
-                              className={
-                                reportView === 'parent' ? 'mode-pill active' : 'mode-pill'
-                              }
-                              onClick={() => setReportView('parent')}
-                            >
-                              Отчёт родителя
-                            </button>
-                            <button
-                              type="button"
-                              role="tab"
-                              aria-selected={reportView === 'specialist'}
-                              className={
-                                reportView === 'specialist'
-                                  ? 'mode-pill active'
-                                  : 'mode-pill'
-                              }
-                              onClick={() => setReportView('specialist')}
-                            >
-                              Протокол специалиста
-                            </button>
+                          <div className="mode-pills no-print" aria-label="Тип отчёта">
+                            <span className="mode-pill active">
+                              {userRole === 'specialist'
+                                ? 'Протокол специалиста'
+                                : 'Отчёт родителя'}
+                            </span>
                           </div>
                         </div>
 
@@ -2028,20 +1973,13 @@ function App() {
 
                           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                             <button
-                              type="button"
-                              className="btn-secondary"
-                              onClick={() => openScreeningForChild(activeChild)}
-                            >
-                              Пройти ещё раз
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-primary"
-                              onClick={() => goToScreen('cabinet')}
+                            type="button"
+                            className="btn-primary"
+                            onClick={() => goToScreen('cabinet')}
                             >
                               В кабинет
-                            </button>
-                          </div>
+                              </button>
+                              </div>
                         </div>
 
                         {showRawJson && reportView === 'specialist' && (

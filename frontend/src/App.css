@@ -2049,3 +2049,20 @@
     flex-direction: column;
   }
 }
+
+/* ==================== ОБНОВЛЁННАЯ МЕТОДИКА: 3 РЕЖИМА И ЖИРНОЕ ВЫДЕЛЕНИЕ ==================== */
+
+.book-picker {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.stimulus-bold {
+  font-weight: 800;
+  color: #111c2d;
+}
+
+@media (max-width: 768px) {
+  .book-picker {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 from pydantic import BaseModel, EmailStr
 from models import RoleEnum
 
@@ -42,6 +42,7 @@ class ChildCreate(BaseModel):
 class ChildOut(ChildCreate):
     id: int
     guardian_id: int
+    last_screening: Optional[Dict[str, Any]] = None
 
     class Config:
         from_attributes = True
