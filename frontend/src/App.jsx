@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import './App.css'
-import { TEST_MODES } from './stimuli'
+import { TEST_MODES, PRACTICE_STIMULI, buildRandomizedStimuli } from './stimuli'
 
 const API_BASE = import.meta.env.DEV ? 'http://127.0.0.1:8000' : ''
 const SCREENING_ENDPOINT = `${API_BASE}/api/screenings`
@@ -36,7 +36,7 @@ function renderFormattedSentence(text) {
 
 const COMPONENT_ADVICE = {
   Орфография: 'Полезны короткие игры на поиск одинаковых слогов и буквосочетаний в словах.',
-  Фонология: 'Обратите внимание на различение похожих по звучанию слов (например, плот/плоть, рад/ряд).',
+  Фонология: 'Обратите внимание на различение похожих по звучанию слов (например, плот/плоть, угол/уголь).',
   Семантика: 'Почаще просите ребёнка своими словами пересказывать прочитанное и подбирать синонимы.',
   Морфология: 'Разбирайте вместе состав сложных слов (лесоруб, книголюб, листопад) — это расширяет словарь.',
   Синтаксис: 'Тренируйте согласование слов в длинных предложениях, читая вслух с интонацией.',
@@ -122,24 +122,20 @@ function App() {
   // Состояние окна скрининга
   const [activeChild, setActiveChild] = useState(null)
   const [selectedModeId, setSelectedModeId] = useState(TEST_MODES[0].id)
+  const [sessionItems, setSessionItems] = useState([])
   const [consentAccepted, setConsentAccepted] = useState(false)
-  const [testStage, setTestStage] = useState('ready') // 'ready' | 'testing' | 'result'
-  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  // 'ready' | 'practice' | 'practice_done' | 'testing' | 'result'
+  const [testStage, setTestStage] = useState('ready')
+  const [practiceIdx, setPracticeIdx] = useState(0)
+  const [practiceAnswer, setPracticeAnswer] = useState(undefined)
   const [currentItemIdx, setCurrentItemIdx] = useState(0)
-  const [itemStartTime, setItemStartTime] = useState(null)
+  const [itemPhase, setItemPhase] = useState('reading') // 'reading' | 'answering'
+  const [phaseStartTime, setPhaseStartTime] = useState(null)
   const [answers, setAnswers] = useState({}) // { [itemId]: optionIdx }
-  const [itemTimings, setItemTimings] = useState({}) // { [itemId]: seconds }
+  // { [itemId]: { readingTimeSec: number, answerTimeSec: number } }
+  const [itemTimings, setItemTimings] = useState({})
   const [lastResult, setLastResult] = useState(null)
   const reportView = userRole === 'specialist' ? 'specialist' : 'parent'
-  const [showRawJson, setShowRawJson] = useState(false)
-
-  useEffect(() => {
-    if (screen !== 'screening' || testStage !== 'testing') return
-    const intervalId = setInterval(() => {
-      setElapsedSeconds((prev) => prev + 1)
-    }, 1000)
-    return () => clearInterval(intervalId)
-  }, [screen, testStage])
 
   useEffect(() => {
     if (!token) return
@@ -446,65 +442,105 @@ function App() {
   function openScreeningForChild(child) {
     setActiveChild(child)
     setSelectedModeId(TEST_MODES[0].id)
+    setSessionItems([])
     setConsentAccepted(false)
     setTestStage('ready')
-    setElapsedSeconds(0)
+    setPracticeIdx(0)
+    setPracticeAnswer(undefined)
     setCurrentItemIdx(0)
+    setItemPhase('reading')
+    setPhaseStartTime(null)
     setAnswers({})
     setItemTimings({})
     setLastResult(null)
-    setShowRawJson(false)
     setScreen('screening')
   }
 
-    function openSavedReportForChild(child) {
+  function openSavedReportForChild(child) {
     if (!child.lastResult) return
 
     setActiveChild(child)
     setLastResult(child.lastResult)
     setTestStage('result')
     setSelectedModeId(TEST_MODES[0].id)
-    setShowRawJson(false)
     setScreen('screening')
   }
 
   const activeMode =
     TEST_MODES.find((m) => m.id === selectedModeId) || TEST_MODES[0]
-  const activeItems = activeMode.items
+  const activeItems = sessionItems
   const currentItem = activeItems[currentItemIdx]
   const currentAnswer = currentItem ? answers[currentItem.id] : undefined
+  const currentPracticeItem = PRACTICE_STIMULI[practiceIdx]
 
+  // Сначала запускаем 5 пробных заданий (не идут в зачёт)
   function startTesting() {
     if (!consentAccepted) return
-    setElapsedSeconds(0)
+    setPracticeIdx(0)
+    setPracticeAnswer(undefined)
+    setItemPhase('reading')
+    setTestStage('practice')
+  }
+
+  function handlePracticeShowQuestions() {
+    setItemPhase('answering')
+  }
+
+  function handleNextPractice() {
+    if (practiceIdx < PRACTICE_STIMULI.length - 1) {
+      setPracticeIdx((prev) => prev + 1)
+      setPracticeAnswer(undefined)
+      setItemPhase('reading')
+    } else {
+      setTestStage('practice_done')
+    }
+  }
+
+  // Старт основного теста после тренировки (с нуля, без тренировочных данных)
+  function startMainTesting() {
+    const randomized = buildRandomizedStimuli(activeMode.perComponent)
+    setSessionItems(randomized)
     setCurrentItemIdx(0)
+    setItemPhase('reading')
     setAnswers({})
     setItemTimings({})
-    setItemStartTime(Date.now())
+    setPhaseStartTime(Date.now())
     setTestStage('testing')
   }
 
-  function recordCurrentItemTime() {
-    if (!currentItem || !itemStartTime) return itemTimings
-    const spentSec = Number(((Date.now() - itemStartTime) / 1000).toFixed(1))
+  // Отдельно фиксируем время чтения предложения и время ответа на вопрос.
+  function recordCurrentPhaseTime() {
+    if (!currentItem || !phaseStartTime) return itemTimings
+
+    const spentSec = Number(((Date.now() - phaseStartTime) / 1000).toFixed(1))
+    const timingKey = itemPhase === 'reading' ? 'readingTimeSec' : 'answerTimeSec'
+    const currentTiming = itemTimings[currentItem.id] || {
+      readingTimeSec: 0,
+      answerTimeSec: 0,
+    }
     const nextTimings = {
       ...itemTimings,
-      [currentItem.id]: Number(((itemTimings[currentItem.id] || 0) + spentSec).toFixed(1)),
+      [currentItem.id]: {
+        ...currentTiming,
+        [timingKey]: Number(((currentTiming[timingKey] || 0) + spentSec).toFixed(1)),
+      },
     }
+
     setItemTimings(nextTimings)
     return nextTimings
   }
 
-  function handleNextItem() {
-    recordCurrentItemTime()
-    setCurrentItemIdx((prev) => prev + 1)
-    setItemStartTime(Date.now())
+  function handleShowQuestions() {
+    recordCurrentPhaseTime()
+    setItemPhase('answering')
+    setPhaseStartTime(Date.now())
   }
 
-  function handlePrevItem() {
-    recordCurrentItemTime()
-    setCurrentItemIdx((prev) => prev - 1)
-    setItemStartTime(Date.now())
+  function handleNextItem() {
+    recordCurrentPhaseTime()
+    setCurrentItemIdx((prev) => prev + 1)
+    setItemPhase('reading')
+    setPhaseStartTime(Date.now())
   }
 
   function selectAnswer(itemId, optionIdx) {
@@ -512,14 +548,17 @@ function App() {
   }
 
   async function finishScreening() {
-    const finalTimings = recordCurrentItemTime()
+    const finalTimings = recordCurrentPhaseTime()
     const totalQuestions = activeItems.length
 
-    // Считаем точное время, количество слов и разбор по каждому заданию
+    // Сохраняем время чтения предложения и время ответа отдельно для каждого задания.
     const itemLog = activeItems.map((item) => {
       const chosenIdx = answers[item.id]
       const isCorrect = chosenIdx === item.correctIndex
-      const timeSec = finalTimings[item.id] || 1.0
+      const timing = finalTimings[item.id] || {}
+      const readingTimeSec = Number((timing.readingTimeSec || 0).toFixed(1))
+      const answerTimeSec = Number((timing.answerTimeSec || 0).toFixed(1))
+      const timeSec = Number((readingTimeSec + answerTimeSec).toFixed(1))
       return {
         id: item.id,
         component: item.component,
@@ -528,6 +567,8 @@ function App() {
         chosenText: chosenIdx !== undefined ? item.options[chosenIdx] : '—',
         correctText: item.options[item.correctIndex],
         isCorrect,
+        readingTimeSec,
+        answerTimeSec,
         timeSec,
       }
     })
@@ -536,15 +577,21 @@ function App() {
       (sum, item) => sum + item.sentence.split(/\s+/).filter(Boolean).length,
       0
     )
-    const summedSec = itemLog.reduce((sum, row) => sum + row.timeSec, 0)
-    const durationSec = Math.max(Math.round(summedSec), elapsedSeconds, 1)
+    const readingDurationSec = Number(
+      itemLog.reduce((sum, row) => sum + row.readingTimeSec, 0).toFixed(1)
+    )
+    const answeringDurationSec = Number(
+      itemLog.reduce((sum, row) => sum + row.answerTimeSec, 0).toFixed(1)
+    )
+    const durationSec = Math.max(Math.round(readingDurationSec + answeringDurationSec), 1)
 
     const correctAnswers = itemLog.filter((r) => r.isCorrect).length
     const errorsCount = totalQuestions - correctAnswers
     const comprehensionPct = Math.round((correctAnswers / totalQuestions) * 100)
     const errorRate = Number(((errorsCount / totalQuestions) * 100).toFixed(1))
     const avgTimeSec = Number((durationSec / totalQuestions).toFixed(1))
-    const netWpm = Math.max(1, Math.round((totalWords / durationSec) * 60))
+    // Темп чтения рассчитывается только по времени, в течение которого читалось предложение.
+    const netWpm = Math.max(1, Math.round((totalWords / Math.max(readingDurationSec, 1)) * 60))
 
     // Группировка по 5 методическим компонентам
     const componentOrder = ['Орфография', 'Фонология', 'Семантика', 'Морфология', 'Синтаксис']
@@ -558,31 +605,31 @@ function App() {
           ? Number((rows.reduce((s, r) => s + r.timeSec, 0) / total).toFixed(1))
           : 0
       let level = 'ok'
-      let statusLabel = 'Норма'
+      let statusLabel = 'Уверенно'
       if (pct < 50) {
         level = 'err'
-        statusLabel = 'Требует поддержки'
+        statusLabel = 'Есть затруднения'
       } else if (pct < 80) {
         level = 'warn'
-        statusLabel = 'Зона внимания'
+        statusLabel = 'Средний результат'
       }
       return { component: compName, correct, total, pct, avgSec, level, statusLabel }
     })
 
-    // Генерация подробной обратной связи для родителя
+    // Генерация нейтральной обратной связи для родителя
     const strongComps = componentStats.filter((c) => c.pct >= 80).map((c) => c.component)
     const weakComps = componentStats.filter((c) => c.pct < 80)
 
     let detailedSummary = ''
     if (comprehensionPct >= 85) {
       detailedSummary =
-        'Отличный результат! Ребёнок уверенно справляется с предложениями, точно понимает смысл и грамматические связи. Дополнительная коррекция не требуется — достаточно поддерживать регулярное чтение.'
+        'Ребёнок уверенно справился с большинством заданий теста. Текущие показатели по компонентам чтения высокие — достаточно поддерживать привычку к регулярному чтению.'
     } else if (comprehensionPct >= 60) {
       detailedSummary =
-        'Хороший базовый уровень, но в отдельных компонентах чтения встречаются затруднения. Ниже указаны конкретные направления, которые стоит мягко потренировать дома или обсудить с педагогом.'
+        'Ребёнок справился с основной частью заданий, однако в отдельных компонентах встретились ошибки. Обратите внимание на блоки с более низким процентом — их полезно потренировать в спокойном темпе.'
     } else {
       detailedSummary =
-        'Выявлены заметные трудности при чтении и анализе предложений. Рекомендуется показать подробный протокол логопеду или школьному педагогу для подбора индивидуальных упражнений.'
+        'При выполнении заданий возникли затруднения в нескольких блоках. Подробный протокол поможет увидеть, какие именно типы заданий дались сложнее; при желании результаты можно обсудить с педагогом или профильным специалистом.'
     }
 
     const recommendations = weakComps.map(
@@ -594,6 +641,9 @@ function App() {
       consent_152fz: true,
       mode_id: activeMode.id,
       avg_time_per_item_sec: avgTimeSec,
+      reading_time_seconds: readingDurationSec,
+      answer_time_seconds: answeringDurationSec,
+      total_time_seconds: durationSec,
       component_stats: componentStats,
       items: itemLog,
     }
@@ -601,7 +651,8 @@ function App() {
     const submitPayload = {
       child_id: Number(activeChild.id),
       word_Count: totalWords,
-      reading_time_seconds: Number(durationSec),
+      // API использует это поле для расчёта темпа чтения.
+      reading_time_seconds: Number(readingDurationSec),
       correct_answers: correctAnswers,
       total_questions: totalQuestions,
       errors_made: errorsCount,
@@ -639,6 +690,8 @@ function App() {
       completedAt: serverData?.created_at || new Date().toISOString(),
       savedToApi,
       durationSec,
+      readingDurationSec,
+      answeringDurationSec,
       avgTimeSec,
       totalWords,
       errorsCount,
@@ -798,7 +851,7 @@ function App() {
                     <div className="hero-metrics-row">
                       <div className="hero-metric">
                         <strong>5 компонентов</strong>
-                        <span>комплексная диагностика</span>
+                        <span>комплексный скрининг</span>
                       </div>
                       <div className="hero-metric">
                         <strong>PDF-отчёт</strong>
@@ -872,13 +925,13 @@ function App() {
                           <>
                             <div className="parent-verdict">
                               <div className="verdict-head">
-                                <span className="verdict-title">Навык в пределах нормы</span>
+                                <span className="verdict-title">Высокий результат</span>
                                 <span className="verdict-pill">2 класс</span>
                               </div>
                               <p>
                                 Ребёнок уверенно понимает смысл предложений и правильно
-                                согласует слова. Рекомендуем повторить проверку через
-                                четверть.
+                                согласует слова. Достаточно поддерживать привычку к
+                                регулярному чтению.
                               </p>
                             </div>
 
@@ -1080,7 +1133,7 @@ function App() {
                         </p>
                         <ul className="role-choice-points">
                           <li>Профили детей в одном кабинете</li>
-                          <li>Понятный вывод и рекомендации в PDF</li>
+                          <li>Понятная сводка и рекомендации в PDF</li>
                           <li>История прохождений в динамике</li>
                         </ul>
                       </div>
@@ -1096,7 +1149,7 @@ function App() {
                         <h2>Специалист</h2>
                         <p>
                           Для логопедов, дефектологов и педагогов начальных классов при
-                          первичной диагностике.
+                          первичном скрининге.
                         </p>
                         <ul className="role-choice-points">
                           <li>Ведение карточек группы учеников</li>
@@ -1277,10 +1330,14 @@ function App() {
                               fontWeight: 700,
                               textDecoration: 'underline',
                               textUnderlineOffset: '3px',
-                            }} onClick={(e) => { e.preventDefault(); window.open('/personal-data-consent.html', '_blank'); }}>
+                            }}
+                            onClick={(e) => {
+                              e.preventDefault()
+                              window.open('/personal-data-consent.html', '_blank')
+                            }}
+                          >
                             согласие на обработку моих персональных данных
                           </a>.
-
                         </span>
                       </label>
                     </div>
@@ -1551,35 +1608,35 @@ function App() {
                                 </div>
 
                                 <div className="child-actions">
-  {child.lastResult && (
-    <button
-      type="button"
-      className="btn-start-test"
-      onClick={() => openSavedReportForChild(child)}
-    >
-      Посмотреть отчёт →
-    </button>
-  )}
+                                  {child.lastResult && (
+                                    <button
+                                      type="button"
+                                      className="btn-start-test"
+                                      onClick={() => openSavedReportForChild(child)}
+                                    >
+                                      Посмотреть отчёт →
+                                    </button>
+                                  )}
 
-  {!child.lastResult && (
-  <button
-    type="button"
-    className="btn-start-test"
-    onClick={() => openScreeningForChild(child)}
-  >
-    Начать скрининг →
-  </button>
-)}
+                                  {!child.lastResult && (
+                                    <button
+                                      type="button"
+                                      className="btn-start-test"
+                                      onClick={() => openScreeningForChild(child)}
+                                    >
+                                      Начать скрининг →
+                                    </button>
+                                  )}
 
-  <button
-    type="button"
-    className="btn-remove"
-    onClick={() => handleRemoveChild(child.id)}
-    disabled={deletingChildId === child.id}
-  >
-    {deletingChildId === child.id ? 'Удаляем…' : 'Удалить'}
-  </button>
-</div>
+                                  <button
+                                    type="button"
+                                    className="btn-remove"
+                                    onClick={() => handleRemoveChild(child.id)}
+                                    disabled={deletingChildId === child.id}
+                                  >
+                                    {deletingChildId === child.id ? 'Удаляем…' : 'Удалить'}
+                                  </button>
+                                </div>
                               </article>
                             )
                           })}
@@ -1612,6 +1669,17 @@ function App() {
                       </span>
                       <span
                         className={`step-pill ${
+                          testStage === 'practice' || testStage === 'practice_done'
+                            ? 'active'
+                            : testStage === 'testing' || testStage === 'result'
+                              ? 'done'
+                              : ''
+                        }`}
+                      >
+                        2. Тренировка
+                      </span>
+                      <span
+                        className={`step-pill ${
                           testStage === 'testing'
                             ? 'active'
                             : testStage === 'result'
@@ -1619,12 +1687,12 @@ function App() {
                               : ''
                         }`}
                       >
-                        2. Задания
+                        3. Задания
                       </span>
                       <span
                         className={`step-pill ${testStage === 'result' ? 'active' : ''}`}
                       >
-                        3. Отчёт и PDF
+                        4. Отчёт и PDF
                       </span>
                     </div>
                   </div>
@@ -1662,10 +1730,9 @@ function App() {
                         </div>
 
                         <p className="prep-guide">
-                          <strong>Как проводить:</strong> передайте экран ребёнку. В
-                          каждом задании нужно прочитать предложение и выбрать один из
-                          трёх вариантов ответа. Система автоматически замеряет время и
-                          точность по каждому компоненту.
+                          <strong>Как проводить:</strong> передайте экран ребёнку. Сначала
+                          будут 5 коротких тренировочных заданий (они не идут в зачёт),
+                          чтобы ребёнок понял формат. Затем начнётся основной тест.
                         </p>
 
                         <div
@@ -1688,7 +1755,12 @@ function App() {
                                   fontWeight: 700,
                                   textDecoration: 'underline',
                                   textUnderlineOffset: '3px',
-                                }} onClick={(e) => { e.preventDefault(); window.open('/research-consent.html', '_blank'); }}>
+                                }}
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  window.open('/research-consent.html', '_blank')
+                                }}
+                              >
                                 Ознакомиться с документами
                               </a>.
                             </span>
@@ -1702,13 +1774,116 @@ function App() {
                             disabled={!consentAccepted}
                             onClick={startTesting}
                           >
-                            Начать тестирование →
+                            Перейти к тренировке →
                           </button>
                         </div>
                       </>
                     )}
 
-                    {/* ЭТАП 2: ПРОХОЖДЕНИЕ ЗАДАНИЙ ПО ПРЕДЛОЖЕНИЯМ */}
+                    {/* ЭТАП 2: ВВОДНЫЕ ТРЕНИРОВОЧНЫЕ ЗАДАНИЯ (НЕ ИДУТ В ЗАЧЁТ) */}
+                    {testStage === 'practice' && currentPracticeItem && (
+                      <>
+                        <div className="test-progress-bar" aria-hidden="true">
+                          <div
+                            className="test-progress-fill"
+                            style={{
+                              width: `${((practiceIdx + 1) / PRACTICE_STIMULI.length) * 100}%`,
+                            }}
+                          />
+                        </div>
+
+                        <div className="reading-header">
+                          <span className="comp-badge">
+                            Пробное задание {practiceIdx + 1} из {PRACTICE_STIMULI.length} ·{' '}
+                            {currentPracticeItem.component} (не идёт в зачёт)
+                          </span>
+                        </div>
+
+                        <div className="stimulus-sheet">
+                          {renderFormattedSentence(
+                            currentPracticeItem.formattedSentence || currentPracticeItem.sentence
+                          )}
+                        </div>
+
+                        {itemPhase === 'reading' ? (
+                          <div
+                            className="reading-footer"
+                            style={{ marginTop: '26px', justifyContent: 'flex-end' }}
+                          >
+                            <button
+                              type="button"
+                              className="btn-primary lilac"
+                              onClick={handlePracticeShowQuestions}
+                            >
+                              Перейти к вопросам →
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="question-prompt">{currentPracticeItem.question}</p>
+
+                            <div className="options-stack">
+                              {currentPracticeItem.options.map((optionText, idx) => (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  className={
+                                    practiceAnswer === idx
+                                      ? 'option-btn selected'
+                                      : 'option-btn'
+                                  }
+                                  onClick={() => setPracticeAnswer(idx)}
+                                >
+                                  <span className="option-letter">
+                                    {['А', 'Б', 'В'][idx]}
+                                  </span>
+                                  <span>{optionText}</span>
+                                </button>
+                              ))}
+                            </div>
+
+                            <div
+                              className="reading-footer"
+                              style={{ marginTop: '26px', justifyContent: 'flex-end' }}
+                            >
+                              <button
+                                type="button"
+                                className="btn-primary lilac"
+                                disabled={practiceAnswer === undefined}
+                                onClick={handleNextPractice}
+                              >
+                                {practiceIdx < PRACTICE_STIMULI.length - 1
+                                  ? 'Следующее пробное задание →'
+                                  : 'Завершить тренировку →'}
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
+
+                    {/* ЭКРАН ПЕРЕХОДА ОТ ТРЕНИРОВКИ К ОСНОВНОМУ ТЕСТУ */}
+                    {testStage === 'practice_done' && (
+                      <>
+                        <h1>Тренировка завершена!</h1>
+                        <p className="screening-desc">
+                          Теперь ты знаешь, как устроены задания. Дальше начнётся основной
+                          тест — читай предложения спокойно и внимательно, а затем выбирай
+                          подходящий вариант ответа.
+                        </p>
+                        <div style={{ marginTop: '24px' }}>
+                          <button
+                            type="button"
+                            className="btn-primary"
+                            onClick={startMainTesting}
+                          >
+                            Начать основной тест →
+                          </button>
+                        </div>
+                      </>
+                    )}
+
+                    {/* ЭТАП 3: ПРОХОЖДЕНИЕ ОСНОВНЫХ ЗАДАНИЙ */}
                     {testStage === 'testing' && currentItem && (
                       <>
                         <div className="test-progress-bar" aria-hidden="true">
@@ -1725,11 +1900,6 @@ function App() {
                             Задание {currentItemIdx + 1} из {activeItems.length} ·{' '}
                             {currentItem.component}
                           </span>
-
-                          <div className="timer-box" aria-live="polite">
-                            <span className="timer-dot" />
-                            {formatTime(elapsedSeconds)}
-                          </div>
                         </div>
 
                         <div className="stimulus-sheet">
@@ -1738,67 +1908,75 @@ function App() {
                           )}
                         </div>
 
-                        <p className="question-prompt">{currentItem.question}</p>
-
-                        <div className="options-stack">
-                          {currentItem.options.map((optionText, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              className={
-                                currentAnswer === idx
-                                  ? 'option-btn selected'
-                                  : 'option-btn'
-                              }
-                              onClick={() => selectAnswer(currentItem.id, idx)}
-                            >
-                              <span className="option-letter">
-                                {['А', 'Б', 'В'][idx]}
-                              </span>
-                              <span>{optionText}</span>
-                            </button>
-                          ))}
-                        </div>
-
-                        <div className="reading-footer" style={{ marginTop: '26px' }}>
-                          {currentItemIdx > 0 ? (
-                            <button
-                              type="button"
-                              className="btn-secondary"
-                              onClick={handlePrevItem}
-                            >
-                              ← Назад
-                            </button>
-                          ) : (
-                            <span />
-                          )}
-
-                          {currentItemIdx < activeItems.length - 1 ? (
+                        {itemPhase === 'reading' ? (
+                          <div
+                            className="reading-footer"
+                            style={{ marginTop: '26px', justifyContent: 'flex-end' }}
+                          >
                             <button
                               type="button"
                               className="btn-primary lilac"
-                              disabled={currentAnswer === undefined}
-                              onClick={handleNextItem}
+                              onClick={handleShowQuestions}
                             >
-                              Следующее задание →
+                              Перейти к вопросам →
                             </button>
-                          ) : (
-                            <button
-                              type="button"
-                              className="btn-primary"
-                              disabled={currentAnswer === undefined || isSubmitting}
-                              onClick={finishScreening}
+                          </div>
+                        ) : (
+                          <>
+                            <p className="question-prompt">{currentItem.question}</p>
+
+                            <div className="options-stack">
+                              {currentItem.options.map((optionText, idx) => (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  className={
+                                    currentAnswer === idx
+                                      ? 'option-btn selected'
+                                      : 'option-btn'
+                                  }
+                                  onClick={() => selectAnswer(currentItem.id, idx)}
+                                >
+                                  <span className="option-letter">
+                                    {['А', 'Б', 'В'][idx]}
+                                  </span>
+                                  <span>{optionText}</span>
+                                </button>
+                              ))}
+                            </div>
+
+                            <div
+                              className="reading-footer"
+                              style={{ marginTop: '26px', justifyContent: 'flex-end' }}
                             >
-                              {isSubmitting
-                                ? 'Сохраняем результат…'
-                                : 'Завершить и получить отчёт'}
-                            </button>
-                          )}
-                        </div>
+                              {currentItemIdx < activeItems.length - 1 ? (
+                                <button
+                                  type="button"
+                                  className="btn-primary lilac"
+                                  disabled={currentAnswer === undefined}
+                                  onClick={handleNextItem}
+                                >
+                                  Следующее задание →
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="btn-primary"
+                                  disabled={currentAnswer === undefined || isSubmitting}
+                                  onClick={finishScreening}
+                                >
+                                  {isSubmitting
+                                    ? 'Сохраняем результат…'
+                                    : 'Завершить и получить отчёт'}
+                                </button>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </>
                     )}
 
-                    {/* ЭТАП 3: ПОДРОБНЫЙ ОТЧЁТ + PDF */}
+                    {/* ЭТАП 4: ПОДРОБНЫЙ ОТЧЁТ + PDF */}
                     {testStage === 'result' && lastResult && (
                       <>
                         <div className="screening-head-row">
@@ -1826,19 +2004,27 @@ function App() {
                         {/* Ключевые метрики */}
                         <div className="result-grid">
                           <div className="result-metric">
-                            <span>Общая точность</span>
+                            <span>Кол-во правильных ответов</span>
                             <strong>
                               {lastResult.correctAnswers}/{lastResult.totalQuestions} (
                               {lastResult.comprehensionPct}%)
                             </strong>
                           </div>
                           <div className="result-metric">
-                            <span>Общее время</span>
-                            <strong>{formatTime(lastResult.durationSec)}</strong>
+                            <span>Общее время ответов</span>
+                            <strong>
+                              {lastResult.answeringDurationSec != null
+                                ? formatTime(Math.round(lastResult.answeringDurationSec))
+                                : 'Нет данных'}
+                            </strong>
                           </div>
                           <div className="result-metric">
-                            <span>Ср. время / задание</span>
-                            <strong>{lastResult.avgTimeSec} сек</strong>
+                            <span>Общее время, потраченное на чтение</span>
+                            <strong>
+                              {lastResult.readingDurationSec != null
+                                ? formatTime(Math.round(lastResult.readingDurationSec))
+                                : 'Нет данных'}
+                            </strong>
                           </div>
                           <div className="result-metric">
                             <span>Темп чтения</span>
@@ -1846,19 +2032,23 @@ function App() {
                           </div>
                         </div>
 
-                        {/* Заключение */}
+                        {/* Сводка */}
                         <div className="parent-verdict" style={{ marginTop: '18px' }}>
                           <div className="verdict-head">
-                            <span className="verdict-title">Общее заключение</span>
+                            <span className="verdict-title">Сводка по результатам</span>
                             <span className="verdict-pill">
                               {lastResult.comprehensionPct >= 85
-                                ? 'Высокий уровень'
+                                ? 'Высокий результат'
                                 : lastResult.comprehensionPct >= 60
-                                  ? 'Базовый уровень'
-                                  : 'Нужна поддержка'}
+                                  ? 'Средний результат'
+                                  : 'Зона внимания'}
                             </span>
                           </div>
                           <p>{lastResult.detailedSummary}</p>
+                          <p style={{ marginTop: '10px', fontSize: '12px', opacity: 0.8 }}>
+                            Результаты скрининга носят информационный и исследовательский
+                            характер и не являются медицинским или логопедическим диагнозом.
+                          </p>
                         </div>
 
                         {/* Профиль по 5 компонентам */}
@@ -1906,8 +2096,9 @@ function App() {
                                 ))
                               ) : (
                                 <li>
-                                  Все 5 компонентов в норме. Поддерживайте регулярное
-                                  чтение интересных ребёнку книг по 15–20 минут в день.
+                                  По всем 5 компонентам показаны высокие результаты.
+                                  Поддерживайте регулярное чтение интересных ребёнку книг
+                                  по 15–20 минут в день.
                                 </li>
                               )}
                             </ul>
@@ -1924,8 +2115,10 @@ function App() {
                                   <th>Компонент</th>
                                   <th>Предложение</th>
                                   <th>Ответ ребёнка</th>
-                                  <th>Эталон</th>
-                                  <th>Время</th>
+                                  <th>Правильный вариант</th>
+                                  <th>Чтение</th>
+                                  <th>Ответы</th>
+                                  <th>Всего</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -1938,7 +2131,19 @@ function App() {
                                       {row.chosenText} {row.isCorrect ? '✓' : '✗'}
                                     </td>
                                     <td>{row.correctText}</td>
-                                    <td>{row.timeSec} с</td>
+                                    <td>
+                                      {row.readingTimeSec != null
+                                        ? `${row.readingTimeSec.toFixed(1)} с`
+                                        : '—'}
+                                    </td>
+                                    <td>
+                                      {row.answerTimeSec != null
+                                        ? `${row.answerTimeSec.toFixed(1)} с`
+                                        : '—'}
+                                    </td>
+                                    <td>
+                                      {row.timeSec != null ? `${row.timeSec.toFixed(1)} с` : '—'}
+                                    </td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -1959,34 +2164,18 @@ function App() {
                             >
                               Скачать отчёт в PDF
                             </button>
-
-                            {reportView === 'specialist' && (
-                              <button
-                                type="button"
-                                className="btn-secondary"
-                                onClick={() => setShowRawJson((prev) => !prev)}
-                              >
-                                {showRawJson ? 'Скрыть JSON' : 'Показать JSON'}
-                              </button>
-                            )}
                           </div>
 
                           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                             <button
-                            type="button"
-                            className="btn-primary"
-                            onClick={() => goToScreen('cabinet')}
+                              type="button"
+                              className="btn-primary"
+                              onClick={() => goToScreen('cabinet')}
                             >
                               В кабинет
-                              </button>
-                              </div>
+                            </button>
+                          </div>
                         </div>
-
-                        {showRawJson && reportView === 'specialist' && (
-                          <pre className="json-preview no-print">
-                            {JSON.stringify(lastResult.rawData, null, 2)}
-                          </pre>
-                        )}
                       </>
                     )}
                   </div>
@@ -2000,7 +2189,9 @@ function App() {
       <footer className="page-footer">
         <div className="footer-inner">
           <span>ReadCheck · платформа скрининга навыков чтения</span>
-          <span>Ориентировочная оценка · не заменяет очную диагностику специалиста</span>
+          <span>
+            Ориентировочная оценка · не является медицинским или логопедическим диагнозом
+          </span>
         </div>
       </footer>
     </div>

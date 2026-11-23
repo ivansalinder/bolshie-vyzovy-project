@@ -50,19 +50,19 @@ COMPONENT_ADVICE = {
 def build_parent_summary(comp_score: float) -> str:
     if comp_score >= 85:
         return (
-            "Отличный результат! Ребёнок уверенно справляется с предложениями, точно понимает "
-            "смысл и грамматические связи. Дополнительная коррекция не требуется — достаточно "
-            "поддерживать регулярное чтение."
+            "Ребёнок уверенно справился с большинством заданий теста. Текущие показатели "
+            "по компонентам чтения высокие — достаточно поддерживать привычку к регулярному чтению."
         )
     if comp_score >= 60:
         return (
-            "Хороший базовый уровень, но в отдельных компонентах чтения встречаются затруднения. "
-            "Ниже указаны конкретные направления, которые стоит мягко потренировать дома или "
-            "обсудить с педагогом."
+            "Ребёнок справился с основной частью заданий, однако в отдельных компонентах "
+            "встретились ошибки. Обратите внимание на блоки с более низким процентом — "
+            "их полезно потренировать в спокойном темпе."
         )
     return (
-        "Выявлены заметные трудности при чтении и анализе предложений. Рекомендуется показать "
-        "подробный протокол логопеду или школьному педагогу для подбора индивидуальных упражнений."
+        "При выполнении заданий возникли затруднения в нескольких блоках. Подробный протокол "
+        "поможет увидеть, какие именно типы заданий дались сложнее; при желании результаты "
+        "можно обсудить с педагогом или профильным специалистом."
     )
 
 
@@ -91,7 +91,10 @@ def format_screening_for_frontend(
     )
 
     duration_sec = int(
-        round((screening.specialist_metrics or {}).get("reading_time_sec", 1))
+        round(
+            raw.get("total_time_seconds")
+            or (screening.specialist_metrics or {}).get("reading_time_sec", 1)
+        )
     )
     avg_time_sec = raw.get("avg_time_per_item_sec") or round(
         duration_sec / max(total_questions, 1), 1
@@ -114,6 +117,8 @@ def format_screening_for_frontend(
         "completedAt": screening.created_at.isoformat() if screening.created_at else "",
         "savedToApi": True,
         "durationSec": duration_sec,
+        "readingDurationSec": raw.get("reading_time_seconds"),
+        "answeringDurationSec": raw.get("answer_time_seconds"),
         "avgTimeSec": avg_time_sec,
         "errorsCount": screening.error_count,
         "netWpm": round(screening.words_per_minute),
@@ -453,7 +458,7 @@ def export_analytics_items_csv(secret: str, db: Session = Depends(get_db)):
             "Компонент",
             "Предложение",
             "Выбранный ответ",
-            "Эталон",
+            "Правильный вариант",
             "Верно (1/0)",
             "Время ответа (сек)",
         ]
