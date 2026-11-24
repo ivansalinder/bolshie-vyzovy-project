@@ -1394,7 +1394,7 @@ function App() {
                         <span>
                           Нажимая кнопку «Зарегистрироваться», я подтверждаю{' '}
                           <a
-                            href="/personal-data-consent.html"
+                            href="/personal-data-consent.pdf"
                             style={{
                               color: 'var(--lilac)',
                               fontWeight: 700,
@@ -1403,7 +1403,7 @@ function App() {
                             }}
                             onClick={(e) => {
                               e.preventDefault()
-                              window.open('/personal-data-consent.html', '_blank')
+                              window.open('/personal-data-consent.pdf', '_blank')
                             }}
                           >
                             согласие на обработку моих персональных данных
@@ -1819,7 +1819,7 @@ function App() {
                             <span>
                               Добровольное информированное согласие на участие в исследовании.{' '}
                               <a
-                                href="/research-consent.html"
+                                href="/research-consent.pdf"
                                 style={{
                                   color: 'var(--lilac)',
                                   fontWeight: 700,
@@ -1828,7 +1828,7 @@ function App() {
                                 }}
                                 onClick={(e) => {
                                   e.preventDefault()
-                                  window.open('/research-consent.html', '_blank')
+                                  window.open('/research-consent.pdf', '_blank')
                                 }}
                               >
                                 Ознакомиться с документами
