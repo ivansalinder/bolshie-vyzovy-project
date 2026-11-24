@@ -34,14 +34,6 @@ function renderFormattedSentence(text) {
   )
 }
 
-const COMPONENT_ADVICE = {
-  Орфография: 'Полезны короткие игры на поиск одинаковых слогов и буквосочетаний в словах.',
-  Фонология: 'Обратите внимание на различение похожих по звучанию слов (например, плот/плоть, угол/уголь).',
-  Семантика: 'Почаще просите ребёнка своими словами пересказывать прочитанное и подбирать синонимы.',
-  Морфология: 'Разбирайте вместе состав сложных слов (лесоруб, книголюб, листопад) — это расширяет словарь.',
-  Синтаксис: 'Тренируйте согласование слов в длинных предложениях, читая вслух с интонацией.',
-}
-
 function formatTime(totalSeconds) {
   const mins = String(Math.floor(totalSeconds / 60)).padStart(2, '0')
   const secs = String(totalSeconds % 60).padStart(2, '0')
@@ -621,6 +613,7 @@ function App() {
         chosenText: chosenIdx !== undefined ? item.options[chosenIdx] : '—',
         correctText: item.options[item.correctIndex],
         isCorrect,
+        answered: chosenIdx !== undefined,
         readingTimeSec,
         answerTimeSec,
         timeSec,
@@ -647,48 +640,21 @@ function App() {
     // Темп чтения рассчитывается только по времени, в течение которого читалось предложение.
     const netWpm = Math.max(1, Math.round((totalWords / Math.max(readingDurationSec, 1)) * 60))
 
-    // Группировка по 5 методическим компонентам
+    // Фактические показатели по пяти компонентам чтения.
     const componentOrder = ['Орфография', 'Фонология', 'Семантика', 'Морфология', 'Синтаксис']
     const componentStats = componentOrder.map((compName) => {
       const rows = itemLog.filter((r) => r.component === compName)
       const total = rows.length
+      const answered = rows.filter((r) => r.answered).length
       const correct = rows.filter((r) => r.isCorrect).length
       const pct = total > 0 ? Math.round((correct / total) * 100) : 0
       const avgSec =
         total > 0
           ? Number((rows.reduce((s, r) => s + r.timeSec, 0) / total).toFixed(1))
           : 0
-      let level = 'ok'
-      let statusLabel = 'Уверенно'
-      if (pct < 50) {
-        level = 'err'
-        statusLabel = 'Есть затруднения'
-      } else if (pct < 80) {
-        level = 'warn'
-        statusLabel = 'Средний результат'
-      }
-      return { component: compName, correct, total, pct, avgSec, level, statusLabel }
+
+      return { component: compName, correct, answered, total, pct, avgSec }
     })
-
-    // Генерация нейтральной обратной связи для родителя
-    const strongComps = componentStats.filter((c) => c.pct >= 80).map((c) => c.component)
-    const weakComps = componentStats.filter((c) => c.pct < 80)
-
-    let detailedSummary = ''
-    if (comprehensionPct >= 85) {
-      detailedSummary =
-        'Ребёнок уверенно справился с большинством заданий теста. Текущие показатели по компонентам чтения высокие — достаточно поддерживать привычку к регулярному чтению.'
-    } else if (comprehensionPct >= 60) {
-      detailedSummary =
-        'Ребёнок справился с основной частью заданий, однако в отдельных компонентах встретились ошибки. Обратите внимание на блоки с более низким процентом — их полезно потренировать в спокойном темпе.'
-    } else {
-      detailedSummary =
-        'При выполнении заданий возникли затруднения в нескольких блоках. Подробный протокол поможет увидеть, какие именно типы заданий дались сложнее; при желании результаты можно обсудить с педагогом или профильным специалистом.'
-    }
-
-    const recommendations = weakComps.map(
-      (c) => `${c.component} (${c.correct}/${c.total}): ${COMPONENT_ADVICE[c.component]}`
-    )
 
     const rawEventsPayload = {
       child_code: formatChildCode(activeChild.id),
@@ -754,9 +720,7 @@ function App() {
       correctAnswers,
       totalQuestions,
       comprehensionPct,
-      detailedSummary,
-      strongComps,
-      recommendations,
+      answeredAnswers: itemLog.filter((r) => r.answered).length,
       componentStats,
       itemLog,
       rawData: serverData?.raw_data || rawEventsPayload,
@@ -778,6 +742,58 @@ function App() {
   }
 
   const completedTestsCount = childrenList.filter((c) => c.lastResult).length
+
+  // Нормализуем данные отчёта, в том числе ранее сохранённые результаты.
+  const reportItemLog = Array.isArray(lastResult?.itemLog) ? lastResult.itemLog : []
+  const reportTotalQuestions = Number.isFinite(lastResult?.totalQuestions)
+    ? lastResult.totalQuestions
+    : reportItemLog.length
+  const reportCorrectCount = Number.isFinite(lastResult?.correctAnswers)
+    ? lastResult.correctAnswers
+    : reportItemLog.filter((row) => row.isCorrect).length
+  const reportComprehensionPct = Number.isFinite(lastResult?.comprehensionPct)
+    ? lastResult.comprehensionPct
+    : reportTotalQuestions > 0
+      ? Math.round((reportCorrectCount / reportTotalQuestions) * 100)
+      : 0
+
+  const reportComponentNames = [
+    'Орфография',
+    'Фонология',
+    'Семантика',
+    'Морфология',
+    'Синтаксис',
+  ]
+  const savedComponentStats = Array.isArray(lastResult?.componentStats)
+    ? lastResult.componentStats
+    : []
+  const reportComponentStats = reportComponentNames.map((component) => {
+    const savedStat = savedComponentStats.find((item) => item.component === component)
+    const rows = reportItemLog.filter((row) => row.component === component)
+    const total = Number.isFinite(savedStat?.total) ? savedStat.total : rows.length
+    const correct = Number.isFinite(savedStat?.correct)
+      ? savedStat.correct
+      : rows.filter((row) => row.isCorrect).length
+    const pct = total > 0 ? Math.round((correct / total) * 100) : 0
+
+    return {
+      component,
+      total,
+      correct,
+      pct,
+      // Зелёный применяется только тогда, когда все задания компонента выполнены верно.
+      state: total > 0 && correct === total ? 'all' : 'neutral',
+    }
+  })
+
+  const reportHasPerfectScore =
+    reportTotalQuestions > 0 && reportCorrectCount === reportTotalQuestions
+  const reportErrorComponents = reportComponentStats
+    .filter((item) => item.total > 0 && item.correct < item.total)
+    .map((item) => item.component)
+  const reportCommentary = reportHasPerfectScore
+    ? `Все задания выполнены правильно: ${reportCorrectCount} из ${reportTotalQuestions} (${reportComprehensionPct}%). По каждому из пяти компонентов получен полный результат. Продолжайте поддерживать интерес ребёнка к чтению.`
+    : `Правильно выполнено ${reportCorrectCount} из ${reportTotalQuestions} заданий (${reportComprehensionPct}%). Ошибки отмечены в компонентах: ${reportErrorComponents.length > 0 ? reportErrorComponents.join(', ') : 'отдельных заданиях'}. Если затруднения повторяются и в повседневном чтении, рекомендуем обсудить результаты с педагогом или специалистом по навыкам чтения.`
 
   return (
     <div className="app-shell">
@@ -2055,109 +2071,75 @@ function App() {
                           </div>
                         </div>
 
-                        {/* Ключевые метрики */}
-                        <div className="result-grid">
-                          <div className="result-metric">
-                            <span>Кол-во правильных ответов</span>
-                            <strong>
-                              {lastResult.correctAnswers}/{lastResult.totalQuestions} (
-                              {lastResult.comprehensionPct}%)
-                            </strong>
-                          </div>
-                          <div className="result-metric">
-                            <span>Общее время ответов</span>
-                            <strong>
-                              {lastResult.answeringDurationSec != null
-                                ? formatTime(Math.round(lastResult.answeringDurationSec))
-                                : 'Нет данных'}
-                            </strong>
-                          </div>
-                          <div className="result-metric">
-                            <span>Общее время, потраченное на чтение</span>
-                            <strong>
-                              {lastResult.readingDurationSec != null
-                                ? formatTime(Math.round(lastResult.readingDurationSec))
-                                : 'Нет данных'}
-                            </strong>
-                          </div>
-                          <div className="result-metric">
-                            <span>Темп чтения</span>
-                            <strong>{lastResult.netWpm} сл/мин</strong>
-                          </div>
-                        </div>
+                        {/* ЕДИНЫЙ БЛОК: ОСНОВНЫЕ И ПОДРОБНЫЕ РЕЗУЛЬТАТЫ */}
+                        <section className="results-panel" aria-labelledby="results-title">
+                          <h3 id="results-title">Результаты</h3>
 
-                        {/* Сводка */}
-                        <div className="parent-verdict" style={{ marginTop: '18px' }}>
-                          <div className="verdict-head">
-                            <span className="verdict-title">Сводка по результатам</span>
-                            <span className="verdict-pill">
-                              {lastResult.comprehensionPct >= 85
-                                ? 'Высокий результат'
-                                : lastResult.comprehensionPct >= 60
-                                  ? 'Средний результат'
-                                  : 'Зона внимания'}
-                            </span>
+                          <div className="result-grid">
+                            <div className="result-metric">
+                              <span>Количество правильных ответов</span>
+                              <strong>
+                                {reportCorrectCount}/{reportTotalQuestions} (
+                                {reportComprehensionPct}%)
+                              </strong>
+                            </div>
+                            <div className="result-metric">
+                              <span>Общее время ответов</span>
+                              <strong>
+                                {lastResult.answeringDurationSec != null
+                                  ? formatTime(Math.round(lastResult.answeringDurationSec))
+                                  : 'Нет данных'}
+                              </strong>
+                            </div>
+                            <div className="result-metric">
+                              <span>Общее время чтения</span>
+                              <strong>
+                                {lastResult.readingDurationSec != null
+                                  ? formatTime(Math.round(lastResult.readingDurationSec))
+                                  : 'Нет данных'}
+                              </strong>
+                            </div>
+                            <div className="result-metric">
+                              <span>Темп чтения</span>
+                              <strong>{lastResult.netWpm} сл/мин</strong>
+                            </div>
                           </div>
-                          <p>{lastResult.detailedSummary}</p>
-                          <p style={{ marginTop: '10px', fontSize: '12px', opacity: 0.8 }}>
-                            Результаты скрининга носят информационный и исследовательский
-                            характер и не являются медицинским или логопедическим диагнозом.
+
+                          <div className="component-results">
+                            <h4>Подробные результаты по компонентам чтения</h4>
+                            <div className="comp-cards">
+                              {reportComponentStats.map((comp) => (
+                                <article
+                                  key={comp.component}
+                                  className={`comp-card comp-card--${comp.state}`}
+                                >
+                                  <div className="comp-card-name">{comp.component}</div>
+                                  <div className="comp-card-score">
+                                    {comp.correct}/{comp.total} ({comp.pct}%)
+                                  </div>
+                                  <div className="bar-track" aria-hidden="true">
+                                    <div
+                                      className={`bar-fill bar-fill--${comp.state}`}
+                                      style={{ width: `${comp.pct}%` }}
+                                    />
+                                  </div>
+                                  <span className={`comp-card-caption comp-card-caption--${comp.state}`}>
+                                    {comp.state === 'all' ? 'Все ответы правильные' : 'Есть ошибки в ответах'}
+                                  </span>
+                                </article>
+                              ))}
+                            </div>
+                          </div>
+                        </section>
+
+                        {/* ФАКТИЧЕСКИЙ КОММЕНТАРИЙ ПО РЕЗУЛЬТАТАМ */}
+                        <section className="result-commentary" aria-labelledby="result-commentary-title">
+                          <h3 id="result-commentary-title">Заключение</h3>
+                          <p>{reportCommentary}</p>
+                          <p className="result-commentary-note">
+                            Скрининг отражает выполнение представленных заданий и не является медицинским или логопедическим диагнозом.
                           </p>
-                        </div>
-
-                        {/* Профиль по 5 компонентам */}
-                        <div className="comp-breakdown">
-                          <h3>Результаты по 5 компонентам чтения</h3>
-                          <div className="comp-cards">
-                            {lastResult.componentStats.map((comp) => (
-                              <div key={comp.component} className="comp-card">
-                                <div className="comp-card-name">{comp.component}</div>
-                                <div className="comp-card-score">
-                                  {comp.correct}/{comp.total} ({comp.pct}%)
-                                </div>
-                                <div className="bar-track">
-                                  <div
-                                    className={`bar-fill ${comp.level}`}
-                                    style={{ width: `${comp.pct}%` }}
-                                  />
-                                </div>
-                                <div className="comp-card-meta">
-                                  ср. {comp.avgSec} сек
-                                </div>
-                                <span className={`status-chip ${comp.level}`}>
-                                  {comp.statusLabel}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Рекомендации для родителя */}
-                        {reportView === 'parent' && (
-                          <div className="feedback-block">
-                            <h3>Подробная обратная связь и рекомендации</h3>
-                            <ul className="feedback-list">
-                              {lastResult.strongComps.length > 0 && (
-                                <li>
-                                  <strong>Сильные стороны:</strong>{' '}
-                                  {lastResult.strongComps.join(', ')} — задания выполнены
-                                  уверенно.
-                                </li>
-                              )}
-                              {lastResult.recommendations.length > 0 ? (
-                                lastResult.recommendations.map((rec, i) => (
-                                  <li key={i}>{rec}</li>
-                                ))
-                              ) : (
-                                <li>
-                                  По всем 5 компонентам показаны высокие результаты.
-                                  Поддерживайте регулярное чтение интересных ребёнку книг
-                                  по 15–20 минут в день.
-                                </li>
-                              )}
-                            </ul>
-                          </div>
-                        )}
+                        </section>
 
                         {/* Подробная таблица по каждому заданию для специалиста */}
                         {reportView === 'specialist' && (
@@ -2244,7 +2226,7 @@ function App() {
         <div className="footer-inner">
           <span>ReadCheck · платформа скрининга навыков чтения</span>
           <span>
-            Ориентировочная оценка · не является медицинским или логопедическим диагнозом
+            Скрининг навыков чтения · отчёт содержит фактические ответы и время выполнения
           </span>
         </div>
       </footer>
