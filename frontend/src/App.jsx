@@ -136,6 +136,49 @@ function App() {
   const [itemTimings, setItemTimings] = useState({})
   const [lastResult, setLastResult] = useState(null)
   const reportView = userRole === 'specialist' ? 'specialist' : 'parent'
+  useEffect(() => {
+  if (!window.history.state?.readcheckScreen) {
+    window.history.replaceState(
+      { readcheckScreen: screen },
+      '',
+      window.location.href
+    )
+  }
+
+  function handleBrowserBack(event) {
+    // Во время тренировки и основного теста не позволяем
+    // случайно выйти из тестирования кнопкой браузера.
+    if (
+      screen === 'screening' &&
+      ['practice', 'practice_done', 'testing'].includes(testStage)
+    ) {
+      window.history.pushState(
+        { readcheckScreen: 'screening' },
+        '',
+        window.location.href
+      )
+      return
+    }
+
+    const previousScreen =
+      event.state?.readcheckScreen || (token ? 'cabinet' : 'intro')
+
+    const safeScreen =
+      !token && ['cabinet', 'screening'].includes(previousScreen)
+        ? 'intro'
+        : previousScreen
+
+    setScreen(safeScreen)
+    setStatus(null)
+    setShowPassword(false)
+  }
+
+  window.addEventListener('popstate', handleBrowserBack)
+
+  return () => {
+    window.removeEventListener('popstate', handleBrowserBack)
+  }
+}, [screen, testStage, token])
 
   useEffect(() => {
     if (!token) return
@@ -181,13 +224,22 @@ function App() {
   }
 
   function goToScreen(nextScreen) {
-    setScreen(nextScreen)
-    setStatus(null)
-    setShowPassword(false)
-    if (nextScreen === 'register') {
-      setRole(null)
-    }
+  if (nextScreen !== screen) {
+    window.history.pushState(
+      { readcheckScreen: nextScreen },
+      '',
+      window.location.href
+    )
   }
+
+  setScreen(nextScreen)
+  setStatus(null)
+  setShowPassword(false)
+
+  if (nextScreen === 'register') {
+    setRole(null)
+  }
+}
 
   function handleSelectRole(chosenRole) {
     setRole(chosenRole)
@@ -237,7 +289,7 @@ function App() {
       if (response.ok) {
         localStorage.setItem('userRole', role)
         setUserRole(role)
-        setScreen('login')
+        goToScreen('login')
         setShowPassword(false)
         setStatus({
           type: 'success',
@@ -298,7 +350,7 @@ function App() {
         localStorage.setItem('userEmail', emailValue)
         setToken(data.access_token)
         setUserEmail(emailValue)
-        setScreen('cabinet')
+        goToScreen('cabinet')
         setStatus(null)
       } else {
         const errorData = await response.json()
@@ -440,21 +492,23 @@ function App() {
   }
 
   function openScreeningForChild(child) {
-    setActiveChild(child)
-    setSelectedModeId(TEST_MODES[0].id)
-    setSessionItems([])
-    setConsentAccepted(false)
-    setTestStage('ready')
-    setPracticeIdx(0)
-    setPracticeAnswer(undefined)
-    setCurrentItemIdx(0)
-    setItemPhase('reading')
-    setPhaseStartTime(null)
-    setAnswers({})
-    setItemTimings({})
-    setLastResult(null)
-    setScreen('screening')
-  }
+  setActiveChild(child)
+  setSelectedModeId(TEST_MODES[0].id)
+  setSessionItems([])
+  setConsentAccepted(false)
+  setTestStage('ready')
+  setPracticeIdx(0)
+  setPracticeAnswer(undefined)
+  setCurrentItemIdx(0)
+  setItemPhase('reading')
+  setPhaseStartTime(null)
+  setAnswers({})
+  setItemTimings({})
+  setLastResult(null)
+
+  // Переходим на экран тестирования и записываем переход в историю браузера
+  goToScreen('screening')
+}
 
   function openSavedReportForChild(child) {
     if (!child.lastResult) return
@@ -463,7 +517,7 @@ function App() {
     setLastResult(child.lastResult)
     setTestStage('result')
     setSelectedModeId(TEST_MODES[0].id)
-    setScreen('screening')
+    goToScreen('screening')
   }
 
   const activeMode =
