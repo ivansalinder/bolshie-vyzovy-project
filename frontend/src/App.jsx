@@ -6,20 +6,7 @@ const API_BASE = import.meta.env.DEV ? 'http://127.0.0.1:8000' : ''
 const SCREENING_ENDPOINT = `${API_BASE}/api/screenings`
 const CHILDREN_STORAGE_KEY = 'readcheck_children_v1'
 
-const PACE_BARS = [
-  { h: 42, type: 'ok' },
-  { h: 55, type: 'ok' },
-  { h: 48, type: 'ok' },
-  { h: 62, type: 'ok' },
-  { h: 50, type: 'ok' },
-  { h: 92, type: 'slow' },
-  { h: 54, type: 'ok' },
-  { h: 45, type: 'ok' },
-  { h: 86, type: 'err' },
-  { h: 58, type: 'ok' },
-  { h: 46, type: 'ok' },
-  { h: 52, type: 'ok' },
-]
+
 
 function renderFormattedSentence(text) {
   if (!text) return null
@@ -74,34 +61,20 @@ function loadSavedChildren() {
   }
 }
 
-function BrandLogo() {
-  return (
-    <span className="brand-mark" aria-hidden="true">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M4 6.5C4 5.4 4.9 4.5 6 4.5H11C11.6 4.5 12 4.9 12 5.5V19.5C12 18.7 11.3 18 10.5 18H6C4.9 18 4 17.1 4 16V6.5Z"
-          fill="#FFFFFF"
-        />
-        <path
-          d="M20 6.5C20 5.4 19.1 4.5 18 4.5H13C12.4 4.5 12 4.9 12 5.5V19.5C12 18.7 12.7 18 13.5 18H18C19.1 18 20 17.1 20 16V6.5Z"
-          fill="#D7F5F1"
-        />
-      </svg>
-    </span>
-  )
-}
-
 function App() {
+  useEffect(() => {
+    document.title = 'ПРОчитано — скрининг навыков чтения'
+  }, [])
+
   const [token, setToken] = useState(() => localStorage.getItem('token') || '')
   const [userEmail, setUserEmail] = useState(() => localStorage.getItem('userEmail') || '')
   const [userRole, setUserRole] = useState(() => localStorage.getItem('userRole') || 'parent')
 
   // Экраны: 'intro' | 'register' | 'login' | 'cabinet' | 'screening'
-  const [screen, setScreen] = useState(() =>
-    localStorage.getItem('token') ? 'cabinet' : 'intro'
-  )
+  // При перезагрузке всегда открываем главную страницу.
+  // Токен авторизации сохраняется, поэтому переход в кабинет доступен из шапки.
+  const [screen, setScreen] = useState('intro')
 
-  const [previewRole, setPreviewRole] = useState('parent')
   const [role, setRole] = useState(null)
   const [showPassword, setShowPassword] = useState(false)
   const [status, setStatus] = useState(null)
@@ -153,7 +126,7 @@ function App() {
     }
 
     const previousScreen =
-      event.state?.readcheckScreen || (token ? 'cabinet' : 'intro')
+      event.state?.readcheckScreen || 'intro'
 
     const safeScreen =
       !token && ['cabinet', 'screening'].includes(previousScreen)
@@ -796,7 +769,7 @@ function App() {
     : `Правильно выполнено ${reportCorrectCount} из ${reportTotalQuestions} заданий (${reportComprehensionPct}%). Ошибки отмечены в компонентах: ${reportErrorComponents.length > 0 ? reportErrorComponents.join(', ') : 'отдельных заданиях'}. Если затруднения повторяются и в повседневном чтении, рекомендуем обсудить результаты с педагогом или специалистом по навыкам чтения.`
 
   return (
-    <div className="app-shell">
+    <div className={screen === 'intro' ? 'app-shell app-shell-home' : 'app-shell'}>
       <header className="topbar">
         <div className="topbar-inner">
           <button
@@ -805,8 +778,9 @@ function App() {
             onClick={() => goToScreen('intro')}
             title="На главную страницу"
           >
-            <BrandLogo />
-            <span className="brand-text">ReadCheck</span>
+            <span className="brand-text" aria-label="ПРОчитано">
+              <span className="wordmark-letter">П</span><span className="wordmark-letter">Р</span><span className="wordmark-letter">О</span><span className="wordmark-letter wordmark-bounce">ч</span><span className="wordmark-letter wordmark-bounce wordmark-bounce-2">и</span><span className="wordmark-letter wordmark-bounce wordmark-bounce-3">т</span><span className="wordmark-letter">а</span><span className="wordmark-letter">н</span><span className="wordmark-letter">о</span>
+            </span>
           </button>
 
           <nav className="topbar-actions" aria-label="Навигация">
@@ -869,302 +843,131 @@ function App() {
         {/* ==================== 1. ГЛАВНАЯ СТРАНИЦА ==================== */}
         {screen === 'intro' && (
           <>
-            <section className="hero-section">
-              <div className="container">
-                <div className="hero-grid">
-                  <div className="hero-copy">
-                    <div className="hero-badge">
-                      <span className="hero-badge-dot" />
-                      Цифровой скрининг чтения · 1–5 классы
+            <section className="home-hero">
+              <div className="container home-container">
+                <div className="home-hero-content">
+                  <h1 className="home-title" aria-label="ПРОчитано">
+                    <span className="wordmark-letter">П</span><span className="wordmark-letter">Р</span><span className="wordmark-letter">О</span><span className="wordmark-letter wordmark-bounce">ч</span><span className="wordmark-letter wordmark-bounce wordmark-bounce-2">и</span><span className="wordmark-letter wordmark-bounce wordmark-bounce-3">т</span><span className="wordmark-letter">а</span><span className="wordmark-letter">н</span><span className="wordmark-letter">о</span>
+                  </h1>
+                  <p className="home-lead">
+                    Понятный скрининг навыков чтения для школьников.
+                  </p>
+                  <p className="home-description">
+                    Посмотрите, как ребёнок справляется с разными заданиями на чтение,
+                    и получите результаты по пяти компонентам.
+                  </p>
+
+                  {!token && (
+                    <div className="home-actions">
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        onClick={() => goToScreen('register')}
+                      >
+                        Начать скрининг →
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={() => goToScreen('login')}
+                      >
+                        Войти в кабинет
+                      </button>
                     </div>
+                  )}
 
-                    <h1>
-                      Поможем увидеть, как{' '}
-                      <span className="gradient-text">читает ребёнок</span>
-                    </h1>
-
-                    <p className="hero-lead">
-                      Спокойная 5-минутная проверка 5 ключевых компонентов чтения:
-                      орфографии, фонологии, семантики, морфологии и синтаксиса.
-                    </p>
-
-                    <div className="hero-cta-row">
-                      {token ? (
-                        <button
-                          type="button"
-                          className="btn-primary"
-                          onClick={() => goToScreen('cabinet')}
-                        >
-                          Перейти в кабинет →
-                        </button>
-                      ) : (
-                        <>
-                          <button
-                            type="button"
-                            className="btn-primary"
-                            onClick={() => goToScreen('register')}
-                          >
-                            Начать бесплатно →
-                          </button>
-
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            onClick={() => goToScreen('login')}
-                          >
-                            Войти в кабинет
-                          </button>
-                        </>
-                      )}
-                    </div>
-
-                    <div className="hero-metrics-row">
-                      <div className="hero-metric">
-                        <strong>5 компонентов</strong>
-                        <span>комплексный скрининг</span>
-                      </div>
-                      <div className="hero-metric">
-                        <strong>PDF-отчёт</strong>
-                        <span>для семьи и специалиста</span>
-                      </div>
-                      <div className="hero-metric">
-                        <strong>152-ФЗ</strong>
-                        <span>обезличенные коды</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="preview-stage" aria-label="Пример отчёта скрининга">
-                    <div className="preview-glow" aria-hidden="true" />
-
-                    <div className="float-chip top-right" aria-hidden="true">
-                      <span className="chip-icon teal">✓</span>
-                      <span>Точность: 93%</span>
-                    </div>
-
-                    <div className="float-chip bottom-left" aria-hidden="true">
-                      <span className="chip-icon lilac">#</span>
-                      <span>Код ученика: RC-0042</span>
-                    </div>
-
-                    <div className="preview-sheet">
-                      <div className="preview-bar">
-                        <span className="preview-session-label">
-                          Интерактивный пример · 2 класс
-                        </span>
-
-                        <div className="mode-pills" role="tablist" aria-label="Режим отчёта">
-                          <button
-                            type="button"
-                            role="tab"
-                            aria-selected={previewRole === 'parent'}
-                            className={previewRole === 'parent' ? 'mode-pill active' : 'mode-pill'}
-                            onClick={() => setPreviewRole('parent')}
-                          >
-                            Родитель
-                          </button>
-                          <button
-                            type="button"
-                            role="tab"
-                            aria-selected={previewRole === 'specialist'}
-                            className={previewRole === 'specialist' ? 'mode-pill active' : 'mode-pill'}
-                            onClick={() => setPreviewRole('specialist')}
-                          >
-                            Специалист
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="preview-body">
-                        <div className="reading-sample">
-                          <div className="sample-top">
-                            <span>Пример задания · Синтаксис</span>
-                            <span>заполнение пропуска</span>
-                          </div>
-
-                          <p className="sample-text">
-                            Книги, которые подарила мне бабушка на день рождения,{' '}
-                            <span className={previewRole === 'specialist' ? 'word-pause' : ''}>
-                              лежат
-                            </span>{' '}
-                            на полке.
-                          </p>
-                        </div>
-
-                        {previewRole === 'parent' ? (
-                          <>
-                            <div className="parent-verdict">
-                              <div className="verdict-head">
-                                <span className="verdict-title">Высокий результат</span>
-                                <span className="verdict-pill">2 класс</span>
-                              </div>
-                              <p>
-                                Ребёнок уверенно понимает смысл предложений и правильно
-                                согласует слова. Достаточно поддерживать привычку к
-                                регулярному чтению.
-                              </p>
-                            </div>
-
-                            <div className="parent-bars">
-                              <div>
-                                <div className="mini-stat-top">
-                                  <span>Точность ответов</span>
-                                  <strong>93%</strong>
-                                </div>
-                                <div className="bar-track">
-                                  <div className="bar-fill ok" style={{ width: '93%' }} />
-                                </div>
-                              </div>
-
-                              <div>
-                                <div className="mini-stat-top">
-                                  <span>Среднее время</span>
-                                  <strong>6.2 сек</strong>
-                                </div>
-                                <div className="bar-track">
-                                  <div className="bar-fill" style={{ width: '80%' }} />
-                                </div>
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="spec-metrics">
-                              <div className="spec-tile">
-                                <span className="spec-tile-label">Орфография</span>
-                                <span className="spec-tile-val">100%</span>
-                              </div>
-                              <div className="spec-tile">
-                                <span className="spec-tile-label">Фонология</span>
-                                <span className="spec-tile-val accent">67%</span>
-                              </div>
-                              <div className="spec-tile">
-                                <span className="spec-tile-label">Синтаксис</span>
-                                <span className="spec-tile-val">100%</span>
-                              </div>
-                            </div>
-
-                            <div className="pace-box">
-                              <div className="pace-header">
-                                Время реакции по заданиям (сек)
-                              </div>
-                              <div className="pace-bars" aria-hidden="true">
-                                {PACE_BARS.map((bar, idx) => (
-                                  <div
-                                    key={idx}
-                                    className={`pace-bar ${bar.type}`}
-                                    style={{ height: `${bar.h}%` }}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </section>
 
-            {/* Блок о проекте ReadCheck */}
-            <section className="bento-section" aria-label="О проекте ReadCheck">
-              <div className="container">
-                <div className="section-header">
-                  <h2>О проекте ReadCheck</h2>
-                  <p>Ранняя оценка навыков чтения для учеников начальной школы</p>
+            <section className="home-section home-why">
+              <div className="container home-container">
+                <div className="home-section-heading">
+                  <p className="home-eyebrow">ЗАЧЕМ НУЖЕН СКРИНИНГ</p>
+                  <h2>Увидеть чтение в деталях</h2>
+                  <p>
+                    Скрининг помогает понять, как ребёнок справляется с разными сторонами
+                    чтения: от распознавания букв и звуков до понимания слов и предложений.
+                    Результаты показывают общий итог и отдельно каждый из пяти компонентов.
+                  </p>
                 </div>
 
-                <div className="bento-showcase">
-                  <article className="bento-box bento-span-7">
-                    <div>
-                      <h3>Зачем нужен скрининг чтения?</h3>
-                      <p>
-                        Навык чтения напрямую влияет на успеваемость по всем школьным
-                        предметам. Методика оценивает сразу 5 ключевых компонентов — от
-                        зрительного распознавания буквосочетаний до понимания сложных
-                        предложений.
-                      </p>
-                    </div>
-
-                    <div className="pillars-grid">
-                      <div className="pillar-item">
-                        <strong>Орфография и фонология</strong>
-                        <span>Точность распознавания слогов и звуков</span>
-                      </div>
-                      <div className="pillar-item">
-                        <strong>Семантика и морфология</strong>
-                        <span>Понимание смысла и состава слов</span>
-                      </div>
-                      <div className="pillar-item">
-                        <strong>Синтаксис</strong>
-                        <span>Согласование слов в предложениях</span>
-                      </div>
-                    </div>
+                <div className="home-components">
+                  <article className="home-component-card">
+                    <span className="home-card-number">01</span>
+                    <h3>Орфография</h3>
+                    <p>Распознавание букв и буквосочетаний.</p>
                   </article>
-
-                  <article className="bento-box bento-span-5">
-                    <div>
-                      <h3>Кому помогает платформа</h3>
-                      <p>
-                        По итогам тестирования можно сразу скачать готовый PDF-отчёт с
-                        рекомендациями для семьи или детальным протоколом для специалиста.
-                      </p>
-                    </div>
-                    <div className="role-compare-pills">
-                      <div className="compare-row">
-                        <span>Родителям</span>
-                        <span className="compare-tag teal">понятные рекомендации</span>
-                      </div>
-                      <div className="compare-row">
-                        <span>Логопедам и педагогам</span>
-                        <span className="compare-tag lilac">профиль по 5 шкалам</span>
-                      </div>
-                    </div>
+                  <article className="home-component-card">
+                    <span className="home-card-number">02</span>
+                    <h3>Фонология</h3>
+                    <p>Различение звуков и похожих по звучанию слов.</p>
                   </article>
-
-                  <article className="bento-box bento-span-12">
-                    <div className="bento-flow-top">
-                      <div>
-                        <h3>Как проходит тестирование</h3>
-                        <p>
-                          Каждому ребёнку автоматически присваивается обезличенный код
-                          ученика для безопасного хранения результатов (152-ФЗ).
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        className="btn-white"
-                        onClick={() => goToScreen(token ? 'cabinet' : 'register')}
-                      >
-                        {token ? 'Открыть кабинет →' : 'Начать регистрацию →'}
-                      </button>
-                    </div>
-
-                    <div className="flow-pills">
-                      <div className="flow-pill">
-                        <span>ШАГ 01</span>
-                        <strong>Профиль и код</strong>
-                      </div>
-                      <div className="flow-pill">
-                        <span>ШАГ 02</span>
-                        <strong>Согласие 152-ФЗ</strong>
-                      </div>
-                      <div className="flow-pill">
-                        <span>ШАГ 03</span>
-                        <strong>Задания по 5 шкалам</strong>
-                      </div>
-                      <div className="flow-pill">
-                        <span>ШАГ 04</span>
-                        <strong>Отчёт и PDF</strong>
-                      </div>
-                    </div>
+                  <article className="home-component-card">
+                    <span className="home-card-number">03</span>
+                    <h3>Семантика</h3>
+                    <p>Понимание значения слов и смысла предложений.</p>
+                  </article>
+                  <article className="home-component-card">
+                    <span className="home-card-number">04</span>
+                    <h3>Морфология</h3>
+                    <p>Понимание состава и значения слов.</p>
+                  </article>
+                  <article className="home-component-card">
+                    <span className="home-card-number">05</span>
+                    <h3>Синтаксис</h3>
+                    <p>Понимание связей между словами в предложении.</p>
                   </article>
                 </div>
+              </div>
+            </section>
+
+            <section className="home-section home-process">
+              <div className="container home-container">
+                <div className="home-section-heading">
+                  <p className="home-eyebrow">ПЯТЬ ПРОСТЫХ ШАГОВ</p>
+                  <h2>Как проходит тестирование</h2>
+                  <p>
+                    От создания профиля до итогового отчёта — последовательно и в удобном темпе.
+                  </p>
+                </div>
+
+                <div className="home-steps" aria-label="Этапы тестирования">
+                  <article className="home-step-card">
+                    <span className="home-card-number">01</span>
+                    <h3>Создайте профиль</h3>
+                    <p>Добавьте ребёнка в личном кабинете.</p>
+                  </article>
+                  <article className="home-step-card">
+                    <span className="home-card-number">02</span>
+                    <h3>Выберите формат</h3>
+                    <p>5, 15 или 75 заданий — в зависимости от нужной глубины скрининга.</p>
+                  </article>
+                  <article className="home-step-card">
+                    <span className="home-card-number">03</span>
+                    <h3>Попробуйте формат</h3>
+                    <p>Пять тренировочных заданий помогают освоиться и не входят в результат.</p>
+                  </article>
+                  <article className="home-step-card">
+                    <span className="home-card-number">04</span>
+                    <h3>Пройдите тест</h3>
+                    <p>Основные задания случайно подбираются по пяти компонентам чтения.</p>
+                  </article>
+                  <article className="home-step-card">
+                    <span className="home-card-number">05</span>
+                    <h3>Посмотрите отчёт</h3>
+                    <p>
+                      Четыре общих показателя и результаты по пяти компонентам. Для специалиста
+                      также доступна подробная таблица по каждому заданию.
+                    </p>
+                  </article>
+                </div>
+
               </div>
             </section>
           </>
         )}
+
 
         {/* ==================== ВНУТРЕННИЕ ЭКРАНЫ ==================== */}
         {screen !== 'intro' && (
@@ -2222,14 +2025,6 @@ function App() {
         )}
       </main>
 
-      <footer className="page-footer">
-        <div className="footer-inner">
-          <span>ReadCheck · платформа скрининга навыков чтения</span>
-          <span>
-            Скрининг навыков чтения · отчёт содержит фактические ответы и время выполнения
-          </span>
-        </div>
-      </footer>
     </div>
   )
 }
