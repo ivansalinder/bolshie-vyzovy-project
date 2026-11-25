@@ -1667,8 +1667,7 @@ function App() {
 
                         <div className="reading-header">
                           <span className="comp-badge">
-                            Пробное задание {practiceIdx + 1} из {PRACTICE_STIMULI.length} ·{' '}
-                            {currentPracticeItem.component} (не идёт в зачёт)
+                            Пробное задание {practiceIdx + 1} из {PRACTICE_STIMULI.length} (не идёт в зачёт)
                           </span>
                         </div>
 
@@ -1770,8 +1769,7 @@ function App() {
 
                         <div className="reading-header">
                           <span className="comp-badge">
-                            Задание {currentItemIdx + 1} из {activeItems.length} ·{' '}
-                            {currentItem.component}
+                            Задание {currentItemIdx + 1} из {activeItems.length}
                           </span>
                         </div>
 
